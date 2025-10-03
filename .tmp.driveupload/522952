@@ -1,0 +1,4 @@
+export * as userController from "./user.controller";
+export * as deviceController from "./device.controller";
+export * as headerAndFooterController from "./headerAndFooter.controller";
+export * as mqttSocketController from "./mqttSocket.controller";

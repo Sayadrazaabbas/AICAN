@@ -1,0 +1,86 @@
+import compression from "compression";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { Express, Request, Response } from "express";
+import mongoSanitize from "express-mongo-sanitize";
+import helmet from "helmet";
+import http from "http";
+import path from "path";
+import { Server } from "socket.io";
+
+import { config, morgan } from "./config";
+import { errorHandler, notFound } from "./middlewares/error";
+import apiRoutes from "./routes";
+import { mqttSocketService } from "./services";
+
+const expressApp: Express = express();
+
+expressApp.use(morgan.successHandler);
+expressApp.use(morgan.errorHandler);
+
+// set security HTTP headers
+expressApp.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-eval'", "data:"],
+        connectSrc: ["'self'", "data:"],
+        imgSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
+  })
+);
+
+// parse json request body
+expressApp.use(express.json({ limit: "50mb" }));
+
+// parse urlencoded request body
+expressApp.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// parse cookie request
+expressApp.use(cookieParser());
+
+// sanitize request data
+expressApp.use(mongoSanitize());
+
+// gzip compression
+expressApp.use(compression());
+
+// enable cors
+expressApp.use(cors());
+
+expressApp.use("/api", apiRoutes);
+
+if (config.env === "production") {
+  expressApp.use(express.static(path.join(__dirname, "../client")));
+  expressApp.get("*", (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, "..", "client", "index.html"));
+  });
+} else {
+  expressApp.get("/", (_req: Request, res: Response) => {
+    res.send("API server is active");
+  });
+}
+
+expressApp.use(notFound);
+expressApp.use(errorHandler);
+
+const app = http.createServer(expressApp);
+
+const io = new Server(app, {
+  cors: {
+    origin: "*", // React dev server
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  mqttSocketService.handleSocketToMqttConnection(socket);
+});
+
+mqttSocketService.handleMqttToSocketConnection(io);
+
+export default app;

@@ -1,0 +1,72 @@
+import { useContext, useEffect } from "react";
+import { Route, Routes, useNavigate } from "react-router";
+
+import { AuthStore } from "./AuthProvider";
+import PageLayout from "./components/pageLayout/PageLayout";
+import DeviceDataContext from "./contexts/DeviceDataContext";
+import useAxios from "./hooks/useAxios";
+import Dashboard from "./pages/Dashboard";
+import Homepage from "./pages/Homepage";
+import ManageDevices from "./pages/ManageDevices";
+import ManageHeaderAndFooter from "./pages/ManageHeaderAndFooter";
+import ManageUsers from "./pages/ManageUsers";
+
+export default function AppRoutes() {
+  const { user } = useContext(AuthStore);
+  const navigate = useNavigate();
+
+  const { request: logoutUser } = useAxios({
+    method: "POST",
+    url: "/api/user/logout",
+  });
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate, logoutUser]);
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<PageLayout />}>
+        <Route
+          index
+          element={
+            <DeviceDataContext>
+              <Homepage />
+            </DeviceDataContext>
+          }
+        />
+        <Route
+          path="dashboard"
+          element={
+            <DeviceDataContext>
+              <Homepage />
+            </DeviceDataContext>
+          }
+        />
+        <Route
+          path="dashboard/:id"
+          element={
+            <DeviceDataContext>
+              <Dashboard />
+            </DeviceDataContext>
+          }
+        />
+
+        <Route path="settings">
+          <Route index element={<ManageDevices />} />
+          <Route path="devices" element={<ManageDevices />} />
+          <Route path="users" element={<ManageUsers />} />
+          <Route path="users/:id" element={<ManageUsers />} />
+          <Route path="setup" element={<ManageHeaderAndFooter />} />
+          <Route path="setup/:id" element={<ManageHeaderAndFooter />} />
+        </Route>
+      </Route>
+    </Routes>
+  );
+}

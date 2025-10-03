@@ -1,0 +1,25 @@
+import { Router } from "express";
+
+import { deviceController } from "../controllers";
+import authenticateToken, { ACCESS } from "../middlewares/authenticatToken";
+
+const router: Router = Router();
+
+router
+  .route("/")
+  .get(authenticateToken(ACCESS.user), deviceController.getDevices)
+  .post(authenticateToken(ACCESS.user), deviceController.createDevice);
+
+router
+  .route("/query")
+  .get(authenticateToken(ACCESS.user), deviceController.queryDevices);
+
+router
+  .route("/config/:id")
+  .put(authenticateToken(ACCESS.user), deviceController.updateDeviceConfig);
+
+router
+  .route("/:id")
+  .get(authenticateToken(ACCESS.user), deviceController.getDeviceById);
+
+export default router;

@@ -1,0 +1,6 @@
+import { Media } from "@/types/default.type";
+import { HeaderAndFooter } from "@/types/headerAndFooter.type";
+
+type AliasHeaderAndFooter = HeaderAndFooter<Media | null>;
+
+export default AliasHeaderAndFooter;

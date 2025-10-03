@@ -1,0 +1,1795 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 26 21:24:44 2021
+
+@author: Jeneel
+"""
+
+import RPi.GPIO as GPIO
+from time import sleep
+import ldrv
+import rboot
+from RThread import *
+import json
+import os
+import threading
+
+CLOCKPIN = 19
+DATAPIN = 26
+SWITCHPIN = 21
+VENT_VALVE = 17
+VAC_VALVE = 22
+
+
+MainMenu = 0    #//MainMenu
+SubMenu1 = 1    #//GameMenu
+SubMenu2 = 2    #//DifficultyMenu
+SubMenu3 = 3    #//LevelMenu
+SubMenu4 = 4    #//LightMenu
+SubMenu5 = 5    #//There is no SubMenu5...it is used for volume
+SubMenu6 = 6    #//LanguageMenu
+SubMenu7 = 7    #//Summary
+maxItemSize = 11
+cursorLine = 1
+displayFirstLine = 1
+
+home_cursors=[[0,2],[0,10],[3,6]]
+home_cursor_pos=0
+home_cursor=home_cursors[0]
+
+run_cursors=[[1,4],[3,1],[3,11]]
+run_cursor_pos=0
+run_cursor=run_cursors[0]
+
+edit_cursors=[[1,4],[3,0],[3,7],[3,13]]
+edit_cursor_pos=0
+edit_cursor=run_cursors[0]
+
+view_cursors=[[1,4],[3,0],[3,12]]
+view_cursor_pos=0
+view_cursor=run_cursors[0]
+
+create_cursors=[[2,8],[3,0],[3,12]]
+create_cursor_pos=0
+create_cursor=create_cursors[0]
+
+running_cursors=[[3,0],[3,11]]
+running_cursor_pos=0
+running_cursor=running_cursors[0]
+
+abort_cursors=[[3,12],[3,2]]
+abort_cursor_pos=0
+abort_cursor=abort_cursors[0]
+
+confirm_del_cursors=[[3,12],[3,2]]
+confirm_del_cursor_pos=0
+confirm_del_cursor=abort_cursors[0]
+
+op_select_cursors=[[2,0],[2,7],[2,13],[3,6]]
+op_select_cursor_pos=0
+op_select_cursor=abort_cursors[0]
+
+input_states_cursors=[[0,0],[0,10],[1,5],[3,0],[3,13]]
+input_states_cursor_pos=0
+input_states_cursor=input_states_cursors[0]
+
+hours_pos=0
+mins_pos=0
+secs_pos=0
+hours = ["00", "01", "02", "03", "04", "05" ,"06", "07", "08", "09", "10", "11", "12"]
+mins = hours + [str(x) for x in range(10,60)]
+secs = hours + [str(x) for x in range(10,60)]
+homeScreen= ["Valve1", "Valve2"]
+startMenu = ["Run", "Create", "Edit", "View", "Return Home", "Shutdown"]
+# startMenu = ["Run", "Create", "Edit", "View", "Return Home", "Language", "Reset", "Summary"]
+One = ["Pac Man", "Asteroids", "Centipede", "Invaders", "Cards", "Return"]
+Two = ["Easy", "Medium", "Hard", "Return"]
+Three = ["One", "Two", "Three", "Four", "Return"]
+Four = ["ON", "OFF", "Return"] 
+
+Six = ["English", "Spanish", "Return"]
+Summary = [0, 0, 0, 0, 0, 0, 0, 0]   #//store selected SubMenu                                                                                                                                                            
+itemsPerScreen = 3  #// one less than max rows..
+menuItems=len(startMenu)
+menuSelected = startMenu
+volumeHandler = False
+volume = 0
+menuOption = 0
+backlightPin = 10  #//PWM pin
+brightness = 255
+
+
+fadeAmount = 5
+result="NC"
+V1 = True
+V2= False
+vc=True
+vn=False
+vn_select = False
+vc_select = False
+vc =  True
+vn = False
+time_select="NA"
+manual_valve="NA"
+pageSelected="Home"
+#welcome()
+run_recipe_no=0
+edit_recipe_no=0
+view_recipe_no = 0
+recipe_select=False
+state_no_select=False
+total_state_no=0
+input_curr_state_no = 0 
+vn_select = False
+vc_select = False
+time_select = False
+operation = "NA"
+
+# x = {"nStates": 3, "states": {"stateList": [[0, 1], [1, 0], [1, 1], [0, 0]], "times": [5, 3, 8, 10]}}
+temp_dict = {
+    "nStates" : 0,
+    "nValves" : 2,
+    "states" : {
+        "stateList":[],
+        "times" : []
+    }
+}
+fontdata1 = [
+        # char(0) - Upper-left character
+        [ 0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b11111, 
+          0b11111 ],
+
+        # char(1) - Upper-middle character
+        [ 0b00000, 
+          0b00000, 
+          0b00100, 
+          0b00110, 
+          0b00111, 
+          0b00111, 
+          0b11111, 
+          0b11111 ],
+        
+        # char(2) - Upper-right character
+        [ 0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b10000, 
+          0b11000 ],
+        
+        # char(3) - Lower-left character
+        [ 0b11111, 
+          0b11111, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000 ],
+       
+        # char(4) - Lower-middle character
+        [ 0b11111, 
+          0b11111, 
+          0b00111, 
+          0b00111, 
+          0b00110, 
+          0b00100, 
+          0b00000, 
+          0b00000 ],
+        
+        # char(5) - Lower-right character
+        [ 0b11000, 
+          0b10000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000, 
+          0b00000 ],
+]
+
+##Loading recipe form Json
+with open('kernelr.json', 'r') as fp:
+    kernelr = json.load(fp)
+create_recipe_no = len(kernelr)
+mylcd = ldrv.lcd()
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(VENT_VALVE, GPIO.OUT)
+GPIO.setup(VAC_VALVE, GPIO.OUT)
+# GPIO.output(VENT_VALVE , GPIO.LOW)
+GPIO.output(VENT_VALVE , GPIO.HIGH)
+GPIO.output(VAC_VALVE , GPIO.HIGH)
+
+def rotaryChange(direction):
+    global result
+    global home_cursor_pos
+    global home_cursor
+    global run_cursors
+    global run_cursor
+    global run_cursor_pos
+    global edit_cursors
+    global edit_cursor
+    global edit_cursor_pos
+    global view_cursors
+    global view_cursor
+    global view_cursor_pos
+    global create_cursors
+    global create_cursor
+    global create_cursor_pos
+    global running_cursors
+    global running_cursor
+    global running_cursor_pos
+    global abort_cursors
+    global abort_cursor
+    global abort_cursor_pos
+    global confirm_del_cursors
+    global confirm_del_cursor
+    global confirm_del_cursor_pos
+    global op_select_cursors
+    global op_select_cursor
+    global op_select_cursor_pos
+    global input_states_cursors
+    global input_states_cursor
+    global input_states_cursor_pos
+       
+    global manual_valve
+    global pageSelected
+    global V1,V2
+    global run_recipe_no
+    global edit_recipe_no
+    global view_recipe_no
+    global recipe_select
+    global total_state_no
+    global state_no_select
+    global vn_select
+    global vc_select
+    global vc,vn
+    global time_select
+    global hours, mins,  secs
+    global hours_pos, mins_pos, secs_pos
+    global create_recipe_no
+    print("turned - " + str(direction))
+    
+    if pageSelected=="Home":
+        if manual_valve=="select_v1":
+            V1= not V1
+            print(V1)
+            display_home_v1()
+        elif manual_valve=="select_v2":
+            V2= not V2
+            display_home_v2()
+        else:
+           # mylcd.lcd_display_string(" ", home_cursor[0], home_cursor[1])
+            if direction==1:
+                #TODO: change the logic to a list
+                if home_cursor_pos == 2:
+                    home_cursor_pos=0
+                else:
+                    home_cursor_pos += 1
+            else:
+                if home_cursor_pos == 0:
+                    home_cursor_pos=2
+                else:
+                    home_cursor_pos -= 1
+            home_cursor=home_cursors[home_cursor_pos]
+            print(home_cursor)
+            display_page_cursor()
+           # mylcd.lcd_display_string(">", home_cursor[0], home_cursor[1])
+    
+    elif pageSelected=="Menu":             
+        if direction==0:
+            if volumeHandler == True:
+               volume-=1
+            else:
+                move_up()
+                chooseMenu()
+
+        if direction==1:
+            if volumeHandler == True:
+                volume+=1
+            else:
+                move_down()
+                chooseMenu()
+
+    elif pageSelected=="Recipe_edit":             
+        if direction==0:
+            move_up()
+            chooseMenu()
+
+        if direction==1:
+            move_down()
+            chooseMenu()
+    
+    elif pageSelected=="Recipe_list":             
+        if direction==0:
+            move_up()
+            chooseMenu()
+
+        if direction==1:
+            move_down()
+            chooseMenu()    
+
+    elif pageSelected == "Op_select":
+        op_select_cursor_pos=rotary_cycle(op_select_cursors,op_select_cursor_pos,direction)
+        op_select_cursor=op_select_cursors[op_select_cursor_pos]
+        display_page_cursor()        
+
+    elif pageSelected=="Run":
+        if recipe_select==True:
+            total_recipe=len(kernelr)
+            run_recipe_no=rotary_cycle(range(0,total_recipe),run_recipe_no,direction)
+            display_run_recipe_no()
+        else:        
+            run_cursor_pos=rotary_cycle(run_cursors,run_cursor_pos,direction)
+            run_cursor=run_cursors[run_cursor_pos]
+            display_page_cursor()
+
+    elif pageSelected == "Edit":
+        if recipe_select==True:
+            total_kernelr=len(kernelr)
+            edit_recipe_no=rotary_cycle(range(0,total_kernelr),edit_recipe_no,direction)
+            display_edit_recipe_no()
+        else:        
+            edit_cursor_pos=rotary_cycle(edit_cursors,edit_cursor_pos,direction)
+            edit_cursor=edit_cursors[edit_cursor_pos]
+            display_page_cursor()        
+
+    elif pageSelected == "View":
+        if recipe_select==True:
+            total_recipe=len(kernelr)
+            view_recipe_no=rotary_cycle(range(0,total_recipe),view_recipe_no,direction)
+            display_view_recipe_no()
+        else:        
+            view_cursor_pos=rotary_cycle(view_cursors,view_cursor_pos,direction)
+            view_cursor=view_cursors[view_cursor_pos]
+            display_page_cursor()    
+
+    elif pageSelected=="Create":
+        if state_no_select==True:
+            total_state_no = rotary_cycle(range(0,99), total_state_no, direction)
+            if total_state_no == 0:
+                total_state_no = 1
+            display_create_state_no()
+        else:    
+            create_cursor_pos=rotary_cycle(create_cursors,create_cursor_pos,direction)
+            create_cursor=create_cursors[create_cursor_pos]
+            display_page_cursor()
+
+    elif pageSelected=="Running": 
+        running_cursor_pos=rotary_cycle(running_cursors,running_cursor_pos,direction)
+        running_cursor=running_cursors[running_cursor_pos]
+        display_page_cursor()
+
+    elif pageSelected=="Abort": 
+        abort_cursor_pos=rotary_cycle(abort_cursors, abort_cursor_pos,direction)
+        abort_cursor=abort_cursors[abort_cursor_pos]
+        display_page_cursor()
+
+    elif pageSelected=="Confirm_shutdown": 
+        abort_cursor_pos=rotary_cycle(abort_cursors, abort_cursor_pos,direction)
+        abort_cursor=abort_cursors[abort_cursor_pos]
+        display_page_cursor()
+
+    elif pageSelected=="Confirm_del": 
+        confirm_del_cursor_pos=rotary_cycle(confirm_del_cursors, confirm_del_cursor_pos,direction)
+        confirm_del_cursor=confirm_del_cursors[confirm_del_cursor_pos]
+        display_page_cursor()
+
+    elif pageSelected=="Input_states":
+        if vn_select == True:
+            vn = not vn
+            if vn == True:
+                mylcd.lcd_display_string("OPEN ",0,4)
+            else:
+                mylcd.lcd_display_string("CLOSE",0,4)
+            
+
+        elif vc_select == True:
+            vc = not vc
+            if vc == True:
+                mylcd.lcd_display_string("OPEN ",0,14)
+            else:
+                mylcd.lcd_display_string("CLOSE",0,14)        
+            
+        
+        elif time_select == "hh":
+            hours_pos=rotary_cycle(hours, hours_pos,direction)
+            mylcd.lcd_display_string(hours[hours_pos],1,6)
+
+        elif time_select == "mm":
+            mins_pos=rotary_cycle(mins, mins_pos,direction)
+            mylcd.lcd_display_string(mins[mins_pos],1,9)
+
+
+        elif time_select == "ss":
+            secs_pos=rotary_cycle(secs, secs_pos,direction)
+            mylcd.lcd_display_string(secs[secs_pos],1,12)
+
+        else:    
+            print("Scrolles in Input States")
+            input_states_cursor_pos=rotary_cycle(input_states_cursors, input_states_cursor_pos,direction)
+            input_states_cursor=input_states_cursors[input_states_cursor_pos]
+            display_page_cursor()
+
+    elif pageSelected=="Edit_input_states":
+            if vn_select == True:
+                vn = not vn
+                if vn == True:
+                    mylcd.lcd_display_string("OPEN ",0,4)
+                else:
+                    mylcd.lcd_display_string("CLOSE",0,4)
+                
+
+            elif vc_select == True:
+                vc = not vc
+                if vc == True:
+                    mylcd.lcd_display_string("OPEN ",0,14)
+                else:
+                    mylcd.lcd_display_string("CLOSE",0,14)        
+                
+            
+            elif time_select == "hh":
+                hours_pos=rotary_cycle(hours, hours_pos,direction)
+                mylcd.lcd_display_string(hours[hours_pos],1,6)
+
+            elif time_select == "mm":
+                mins_pos=rotary_cycle(mins, mins_pos,direction)
+                mylcd.lcd_display_string(mins[mins_pos],1,9)
+
+
+            elif time_select == "ss":
+                secs_pos=rotary_cycle(secs, secs_pos,direction)
+                mylcd.lcd_display_string(secs[secs_pos],1,12)
+
+            else:    
+                print("Scrolles in edit Input States")
+                input_states_cursor_pos=rotary_cycle(input_states_cursors, input_states_cursor_pos,direction)
+                input_states_cursor=input_states_cursors[input_states_cursor_pos]
+                display_page_cursor()
+
+def switchPressed():
+    # global result
+    global manual_valve
+    global home_cursor
+    global run_cursor
+    global edit_cursor
+    global op_select_cursor
+    global view_cursor
+    global abort_cursor
+    global confirm_del_cursor
+    global pageSelected
+    global recipe_select
+    global state_no_select
+    global input_states_cursor
+    global vn_select
+    global vc_select
+    global time_select
+    global vc,vn
+    global time_select
+    global threadObj
+    global recObj
+    global input_curr_state_no
+    global x
+    global temp_dict
+    global create_recipe_no
+    global view_recipe_no
+    global run_recipe_no
+    global hours, mins, secs
+    global operation
+    global timer
+    global abort_cancelled
+    result="BT_Pressed"
+    print("BT_Pressed")
+    
+    if pageSelected=="Home":
+        if manual_valve=="select_v1" or manual_valve=="select_v2":
+            manual_valve="NA"
+            manual_fire_valves()
+            display_page_cursor()
+            # TODO
+        elif home_cursor==[0,2]:
+            mylcd.lcd_display_string(" ",0 ,2 )
+            mylcd.lcd_display_string(">", 1,1)
+            mylcd.lcd_display_string("<", 1,9)
+            manual_valve="select_v1"
+        elif home_cursor==[0,10]: 
+            mylcd.lcd_display_string(">", 1,10)
+            mylcd.lcd_display_string("<", 1,18)
+            mylcd.lcd_display_string(" ",0 ,10 )
+            manual_valve="select_v2"
+        elif home_cursor==[3,6]:
+            pageSelected="Menu"
+            chooseMenu()
+            
+    elif pageSelected=="Menu":
+        print("BTpressssed")
+        if menuOption == MainMenu:
+            print("BTpressssed")
+            selectionMainMenu()
+        elif menuOption == SubMenu7:
+            print("BTpressssed")
+            returnToMainMenu()
+        else:
+            selectionSubMenu()
+                
+        # if volumeHandler == False:
+        #     chooseMenu()
+
+
+    elif pageSelected == "Recipe_list":
+        returnToMainMenu()
+        chooseMenu()        
+
+    elif pageSelected=="Run":
+        
+        if recipe_select==True:
+            recipe_select=False
+            display_page_cursor()
+            threadObj = RThread(kernelr[run_recipe_no], mylcd)
+
+        # run_cursors=[[1,4],[3,1],[3,11]]
+        elif run_cursor==[1,4]:
+            print("recipe select clicked")
+            recipe_select=True
+            mylcd.lcd_display_string(" ",1,4)
+            mylcd.lcd_display_string(">",1,11)
+            mylcd.lcd_display_string("<",1,14)
+            #TODO
+        elif run_cursor==[3,1]:
+            try:
+                n = threadObj.running
+            except NameError:
+                mylcd.lcd_display_string("Please Select Recipe", 2,0)
+                sleep(0.5)
+                mylcd.lcd_display_string("                    ", 2,0)
+            else:
+                
+                mylcd.lcd_clear()
+                display_running()
+                currRecipe = threadObj.start()
+                threadObj.refreshDisplayTimer=0
+                print("[INFO] display_running() called")            
+                # threadObj.running is the bool that tells if recipe cooking was started.
+                # threadObj.paused tells if it is paused or not.
+                # threadObj.elapsedTime, threadObj.totalTime, threadObj.currStateNumber are accessible here as well.
+                # to pause the thread call threadObj.switchState()
+                # to Stop call threadObj.abort()
+
+                # The current valve state can be accessed as currRecipe.currValveState. It returns a list.
+                # Also currRecipe.nValves and currRecipe.nStates is accessible.
+                # mylcd.lcd_display_string("Running...",1,2)
+        
+        elif run_cursor==[3,11]:
+            pageSelected="Menu"
+            returnToMainMenu()
+            chooseMenu()
+    
+    elif pageSelected=="Running":
+            # running_cursors=[4,0],[3,0],[3,11]
+            if running_cursor==running_cursors[0]:
+                if threadObj.completed == True:
+                    pageSelected = "Run"
+                    display_run()
+                else:
+                    threadObj.switchState()
+                    display_running_pr(threadObj.paused)
+                
+            elif running_cursor==running_cursors[1]:
+                if threadObj.completed == True:
+                    pageSelected = "Home"
+                    
+                    default_fire_valves()
+                    display_home()
+                else:
+                    pageSelected="Abort"
+                    # threadObj.abort()
+                    
+                    threadObj.switchState()
+                    display_running_pr(threadObj.paused)
+                    display_abort()
+                    # timer = threading.Timer(5,auto_cancel_abort)
+                    # timer.start()
+                    # abort_cancelled = False
+
+
+    elif pageSelected == "Edit":
+        # edit_cursors=[[1,4],[3,0],[3,7],[3,13]]
+        if recipe_select==True:
+            recipe_select=False
+            display_page_cursor()
+
+        elif edit_cursor == edit_cursors[0]:
+            print("recipe select clicked")
+            recipe_select=True
+            mylcd.lcd_display_string(" ",1,4)
+            mylcd.lcd_display_string(">",1,11)
+            mylcd.lcd_display_string("<",1,14)   
+
+        elif edit_cursor == edit_cursors[1]:
+            pageSelected = "Recipe_edit"
+            display_recipe(edit_recipe_no)
+            print("edit recipe selected")
+
+        elif edit_cursor == edit_cursors[2]:
+            pageSelected = "Confirm_del"
+            display_confirm_del()
+            
+
+        elif edit_cursor == edit_cursors[3]:
+            pageSelected="Menu"
+            returnToMainMenu()
+            chooseMenu()            
+        # TODO: create the editing logic here
+        # Once the Recipe to be edited is selected, call the Recipe Constructor and pass the json from the kernelr list 
+        ###recObj = Recipe.Recipe(dict = kernelr[run_recipe_no]) 
+        # call the x = recObj.modifyRecipe((stateIndex, state = None, time = None, operation = 0)
+        ###x = recObj.modifyRecipe((stateIndex, state = [0, 1], time = 10, operation = 0)
+        # operation = 0 means edit existing state at stateIndex, operation = 1 means add a new state at stateIndex and operation = -1 means remove the state at stateIndex
+        # parameters state and time are compulsory for operation = 0 and 1
+        # state should be a list of length equal to number of valves
+        # time should be a floating point number
+        # function returns a dict which should be replaced in the kernelr list as kernelr[index] = x
+        pass
+
+    elif pageSelected=="Recipe_edit":
+        selectionStateNo()
+
+    elif pageSelected=="Op_select":
+        if op_select_cursor == op_select_cursors[0]:
+            pageSelected = "Edit_input_states"
+            operation = "edit" 
+            display_edit_input_states()
+            print("edit state no clicked")
+
+        elif op_select_cursor == op_select_cursors[1]:
+            print("add state no clicked")
+            operation = "add"
+            display_edit_input_states()
+            
+        elif op_select_cursor == op_select_cursors[2]:
+            print("del state no clicked")
+            operation = "del"
+            mod_recipe(edit_recipe_no, edit_recipe_state_no, "del")
+            mylcd.lcd_display_string("                    ", 1)
+            mylcd.lcd_display_string("                    ", 3)
+            mylcd.lcd_display_string("   Delete Success   ", 2)
+            sleep(2)
+            pageSelected = "Recipe_edit"
+            display_recipe(edit_recipe_no) 
+
+        elif op_select_cursor == op_select_cursors[3]:
+            pageSelected = "Recipe_edit"
+            display_recipe(edit_recipe_no)            
+
+
+    elif pageSelected == "View":
+        
+        if recipe_select==True:
+            recipe_select=False
+            display_page_cursor()
+
+        elif view_cursor == view_cursors[0]:
+            print("view recipe select clicked")
+            recipe_select=True
+            mylcd.lcd_display_string(" ",1,4)
+            mylcd.lcd_display_string(">",1,11)
+            mylcd.lcd_display_string("<",1,14)   
+
+        elif view_cursor == view_cursors[1]:
+            print("proceed selected")
+            pageSelected = "Recipe_list"
+            display_recipe(view_recipe_no)
+
+        elif view_cursor == view_cursors[2]:
+            pageSelected="Menu"
+            returnToMainMenu()
+            chooseMenu()
+
+    elif pageSelected=="Create":
+        if state_no_select==True:
+            state_no_select=False
+            display_page_cursor()
+
+        # create_cursors=[[2,8],[3,0],[3,12]]
+        elif create_cursor==[2,8]:
+            print("state select clicked")
+            state_no_select=True
+            mylcd.lcd_display_string(">",2,8)
+            mylcd.lcd_display_string("<",2,11)
+            #TODO
+        elif create_cursor==[3,0]:
+            mylcd.lcd_clear()
+            input_curr_state_no = 0
+            create_recipe_no = len(kernelr)
+            temp_dict = {
+                "nStates" : 0,
+                "nValves" : 2,
+                "states" : {
+                    "stateList":[],
+                    "times" : []
+                }
+            }
+            temp_dict['nStates'] = total_state_no            
+            display_input()
+            # mylcd.lcd_display_string("creating...",1,2)
+            #TODO
+            
+        elif create_cursor==[3,12]:
+            pageSelected="Menu"
+            returnToMainMenu()
+            chooseMenu()
+
+    elif pageSelected == "Input_states":
+        if vn_select == True or vc_select == True:
+            vn_select = False
+            vc_select = False
+            display_page_cursor()
+        elif time_select == "hh":
+            mylcd.lcd_display_string("  ",2,6)
+            mylcd.lcd_display_string("^^",2,9)
+            time_select = "mm"            
+        elif time_select == "mm":
+            mylcd.lcd_display_string("  ",2,9)
+            mylcd.lcd_display_string("^^",2,12)
+            time_select = "ss"
+        elif time_select == "ss":
+            mylcd.lcd_display_string("  ",2,12)
+            time_select="NA"
+            display_page_cursor()
+            
+        elif input_states_cursor==input_states_cursors[0]:
+            mylcd.lcd_display_string("<",0,9)
+            vn_select=True
+        elif input_states_cursor==input_states_cursors[1]:
+            mylcd.lcd_display_string("<",0,19)
+            vc_select=True
+        elif input_states_cursor==input_states_cursors[2]:
+            time_select="hh"
+            mylcd.lcd_display_string("^^",2,6)
+        
+        elif input_states_cursor==input_states_cursors[3]:
+            if input_curr_state_no == 0 and len(temp_dict['states']['stateList']) == 0:
+                temp_dict['states']['stateList'].append(format_states())
+                temp_dict['states']['times'].append(format_time())
+                temp_dict['nStates'] = len(temp_dict['states']['stateList'])                 
+                kernelr.append(temp_dict)
+                with open('kernelr.json', 'w') as fp:
+                    json.dump(kernelr, fp, indent = 4)
+                    fp.close()
+                input_curr_state_no += 1
+                display_input()
+                print("new state dict")
+                print("current state number:", input_curr_state_no)
+                print("Len :", len(temp_dict['states']['stateList']))
+            
+            elif input_curr_state_no == total_state_no:
+                # kernelr.append(temp_dict)
+                temp_dict['states']['stateList'].append(format_states())
+                temp_dict['states']['times'].append(format_time())
+                temp_dict['nStates'] = len(temp_dict['states']['stateList']) 
+                kernelr[create_recipe_no] = temp_dict
+                with open('kernelr.json', 'w') as fp:
+                    json.dump(kernelr, fp, indent = 4)
+                    fp.close()
+                mylcd.lcd_clear()
+                mylcd.lcd_display_string("|Recipe: " + str(len(kernelr)) +"|", 0, 4)
+                mylcd.lcd_display_string(" Created and Saved  ", 2, 0)
+                sleep(2)
+                pageSelected="Menu"
+                returnToMainMenu()
+                chooseMenu()
+            
+            elif (input_curr_state_no) == len(temp_dict['states']['stateList']):
+                temp_dict['states']['stateList'].append(format_states())
+                temp_dict['states']['times'].append(format_time())
+                temp_dict['nStates'] = len(temp_dict['states']['stateList']) 
+                kernelr[create_recipe_no]=temp_dict
+                with open('kernelr.json', 'w') as fp:
+                    json.dump(kernelr, fp, indent = 4)
+                    fp.close()
+                print(temp_dict)
+                input_curr_state_no += 1
+                display_input()
+                print("Next append in temp")
+                print("current state number:", input_curr_state_no)
+                print("Len :", len(temp_dict['states']['stateList'])) 
+            elif (input_curr_state_no) < len(temp_dict['states']['stateList']):
+                temp_dict['states']['stateList'][input_curr_state_no] = format_states()
+                temp_dict['states']['times'][input_curr_state_no] = format_time()
+                kernelr[create_recipe_no]=temp_dict
+                with open('kernelr.json', 'w') as fp:
+                    json.dump(kernelr, fp, indent = 4)
+                    fp.close()                
+                input_curr_state_no += 1
+                print("current state number:", input_curr_state_no)
+                print("Len :", len(temp_dict['states']['stateList']))                 
+                display_input()
+                retrive_saved_state()
+                
+                #####################################
+        # elif input_states_cursor==input_states_cursors[3]:
+        #     if input_curr_state_no == 0 and len(temp_dict['states']['stateList']) == 0:
+        #         temp_dict['states']['stateList'].append(format_states())
+        #         temp_dict['states']['times'].append(format_time())                
+        #         kernelr.append(temp_dict)
+        #         with open('kernelr.json', 'w') as fp:
+        #             json.dump(kernelr, fp)
+        #             fp.close()
+        #         input_curr_state_no += 1
+        #         display_input()
+        #         print("Next new dict")
+            
+        #     elif (input_curr_state_no + 1) == len(temp_dict['states']['stateList']):
+        #         temp_dict['states']['stateList'].append(format_states())
+        #         temp_dict['states']['times'].append(format_time())
+        #         kernelr[create_recipe_no]=temp_dict
+        #         with open('kernelr.json', 'w') as fp:
+        #             json.dump(kernelr, fp)
+        #             fp.close()
+        #         print(temp_dict)
+        #         input_curr_state_no += 1
+        #         display_input()
+        #         print("Next append in temp")                
+        #     elif input_curr_state_no == total_state_no:
+        #         # kernelr.append(temp_dict)
+        #         temp_dict['states']['stateList'].append(format_states())
+        #         temp_dict['states']['times'].append(format_time()) 
+        #         kernelr[create_recipe_no] = temp_dict
+        #         with open('kernelr.json', 'w') as fp:
+        #             json.dump(kernelr, fp)
+        #             fp.close()
+        #         mylcd.lcd_clear()
+        #         mylcd.lcd_display_string("|Recipe: " + str(len(kernelr)) +"|", 0, 4)
+        #         mylcd.lcd_display_string(" Created and Saved  ", 2, 0)
+        #         sleep(2)
+        #         pageSelected="Menu"
+        #         returnToMainMenu()
+        #         chooseMenu()                
+        #     else:
+        #         # format_states()
+        #         # format_time()
+        #         # x = recObj.modifyRecipe(input_curr_state_no, format_states() , format_time(), 1)
+        #         if len(temp_dict['states']['stateList']) >= (input_curr_state_no + 1):
+        #             temp_dict['states']['stateList'][input_curr_state_no] = format_states()
+        #             temp_dict['states']['times'][input_curr_state_no] = format_time()
+        #             input_curr_state_no += 1
+        #             retrive_saved_state()
+        #             # display_input()
+
+        #         else:
+        #             temp_dict['states']['stateList'].append(format_states())
+        #             temp_dict['states']['times'].append(format_time())
+        #             kernelr[create_recipe_no]=temp_dict
+        #             with open('kernelr.json', 'w') as fp:
+        #                 json.dump(kernelr, fp)
+        #                 fp.close()
+        #             print(temp_dict)
+        #             input_curr_state_no += 1
+        #             display_input()
+        #             print("Next,,")
+        #             #TODO:save and next state function
+        #          ################################################   
+        elif input_states_cursor==input_states_cursors[4]:
+            if input_curr_state_no == 0:
+                pageSelected="Menu"
+                returnToMainMenu()
+                chooseMenu()            
+            else:
+                input_curr_state_no -= 1
+                print("current state number:", input_curr_state_no)
+                print("Len :", len(temp_dict['states']['stateList']))                 
+                display_input()
+                retrive_saved_state()
+                # st = kernelr[create_recipe_no]['states']['stateList'][input_curr_state_no]
+                # secs_pos = kernelr[create_recipe_no]['states']['times'][input_curr_state_no]
+                # vn = "OPEN" if st[0]==1 else "CLOSE"
+                # vc = "OPEN" if st[0]==1 else "CLOSE"
+                # hours_pos=secs_pos // (60*60)
+                # secs_pos %= (60*60)
+                # mins_pos = secs_pos // 60
+                # secs_pos %= 60                
+                # display_input_time()
+                # display_input_states()
+                # print(st)
+                # print(secs_pos)
+                
+            print("back,,")
+            #TODO:save and back state function
+
+    elif pageSelected == "Edit_input_states":
+        if vn_select == True or vc_select == True:
+            vn_select = False
+            vc_select = False
+            display_page_cursor()
+        elif time_select == "hh":
+            mylcd.lcd_display_string("  ",2,6)
+            mylcd.lcd_display_string("^^",2,9)
+            time_select = "mm"            
+        elif time_select == "mm":
+            mylcd.lcd_display_string("  ",2,9)
+            mylcd.lcd_display_string("^^",2,12)
+            time_select = "ss"
+        elif time_select == "ss":
+            mylcd.lcd_display_string("  ",2,12)
+            time_select="NA"
+            display_page_cursor()
+            
+        elif input_states_cursor==input_states_cursors[0]:
+            mylcd.lcd_display_string("<",0,9)
+            vn_select=True
+        elif input_states_cursor==input_states_cursors[1]:
+            mylcd.lcd_display_string("<",0,19)
+            vc_select=True
+        elif input_states_cursor==input_states_cursors[2]:
+            time_select="hh"
+            mylcd.lcd_display_string("^^",2,6)
+        
+        elif input_states_cursor==input_states_cursors[3]:
+            if operation == "edit":
+                mod_recipe(edit_recipe_no, edit_recipe_state_no, "edit")
+                print("edit saved")
+                mylcd.lcd_display_string("                    ", 1)
+                mylcd.lcd_display_string("                    ", 3)
+                mylcd.lcd_display_string("    Edit Success    ", 2)
+                sleep(2)
+                pageSelected = "Recipe_edit"
+                display_recipe(edit_recipe_no)
+                # kernelr[edit_recipe_no] = recObj.modifyRecipe(stateIndex, state = format_states(), time = format_time(), operation = 0)
+             
+            elif operation == "add":
+                mod_recipe(edit_recipe_no, edit_recipe_state_no, "add")    
+                print("add saved")
+                mylcd.lcd_display_string("                    ", 1)
+                mylcd.lcd_display_string("                    ", 3)
+                mylcd.lcd_display_string("     Add Success    ", 2)
+                sleep(2)
+                pageSelected = "Recipe_edit"
+                display_recipe(edit_recipe_no) 
+
+        elif input_states_cursor==input_states_cursors[4]:
+            if input_curr_state_no == 0:
+                pageSelected="Op_select"
+                display_operation_select(edit_recipe_no, edit_recipe_state_no)          
+            print("back")
+
+    elif pageSelected=="Abort":
+            if abort_cursor==abort_cursors[0]:
+                pageSelected="Running"
+                display_running()
+                threadObj.display_current_info()
+                abort_cancelled = True
+
+            elif abort_cursor==abort_cursors[1]:
+                pageSelected="Home"
+                threadObj.abort()
+                mylcd.lcd_display_string("                    ",1)
+                mylcd.lcd_display_string("     Aborting       ",2)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,13)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,14)   
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,15)  
+                time.sleep(0.5)
+                display_home()                                
+                # returnToMainMenu()
+                # chooseMenu()        
+
+    elif pageSelected=="Confirm_shutdown":
+            if abort_cursor==abort_cursors[0]:
+                returnToMainMenu()
+                chooseMenu()  
+
+            elif abort_cursor==abort_cursors[1]:
+                power = False
+                mylcd.lcd_clear()
+                mylcd.lcd_display_string("     |Good Bye|     ",0)
+                mylcd.lcd_display_string("  Shutting Down  ",2)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,15)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,16)   
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,17)  
+                time.sleep(0.5)
+                mylcd.lcd_clear()
+                mylcd.backlight(0)            
+                os.system("shutdown now -h")                             
+                
+
+    elif pageSelected=="Confirm_del":
+            if confirm_del_cursor==confirm_del_cursors[0]:
+                pageSelected="Edit"
+                display_edit()
+                display_edit_recipe_no()
+
+            elif confirm_del_cursor==confirm_del_cursors[1]:
+                del kernelr[edit_recipe_no]
+                with open('kernelr.json', 'w') as fp:
+                    json.dump(kernelr, fp, indent = 4)
+                    fp.close()
+                print("del recipe")                
+                pageSelected="Menu"
+                mylcd.lcd_display_string("                    ",1)
+                mylcd.lcd_display_string("     Deleting       ",2)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,13)
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,14)   
+                time.sleep(0.5)
+                mylcd.lcd_display_string(".",2,15)  
+                time.sleep(0.5)
+                returnToMainMenu()
+                chooseMenu()     
+
+def retrive_saved_state():
+    global vn
+    global vc
+    global hours_pos 
+    global mins_pos
+    global secs_pos
+    global input_curr_state_no
+    global create_recipe_no
+    global kernelr
+    st = kernelr[create_recipe_no]['states']['stateList'][input_curr_state_no]
+    secs_pos = kernelr[create_recipe_no]['states']['times'][input_curr_state_no]
+    vn = True if st[0]==1 else False
+    vc = True if st[1]==1 else False
+    hours_pos=secs_pos // (60*60)
+    secs_pos %= (60*60)
+    mins_pos = secs_pos // 60
+    secs_pos %= 60
+    hours_pos = int(hours_pos) 
+    mins_pos = int(mins_pos)
+    secs_pos = int(secs_pos)                
+    display_input_time()
+    display_input_states()
+    print(st)
+    print(secs_pos)    
+
+def format_states():
+    global vn, vc
+    st = [0 , 0]
+    if vn == True:
+        st[0] = 1
+    else:
+        st[0] = 0
+
+    if vc == True:
+        st[1] = 1
+    else:
+        st[1] = 0
+    print(st)
+    return st
+
+def format_time():
+    global hh,mm,ss
+    tm = float(int(hours[hours_pos])*3600 + int(mins[mins_pos])*60 + int(secs[secs_pos]))
+    print(tm)
+    return tm    
+    
+def welcome():
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("AICAN", 1, 7)
+    mylcd.lcd_display_string("AUTOMATE", 2, 5)
+    sleep(2)
+
+def display_home():
+    global pageSelected
+    global home_cursor
+    global home_cursors
+    pageSelected="Home"
+    mylcd.lcd_clear()
+    #mylcd.lcd_display_string("________HOME________", 0)
+    mylcd.lcd_display_string("    Vent   Vacuum   ", 0)
+    mylcd.lcd_display_string("  [     ]  [     ]  ", 1)
+    display_home_v1()
+    display_home_v2()
+    mylcd.lcd_display_string("       |Menu|       ", 3,0)
+    display_page_cursor()
+
+def display_home_v1():
+    if V1==True:
+        mylcd.lcd_display_string(" OPEN", 1,3)
+    else:
+        mylcd.lcd_display_string("CLOSE", 1,3)
+
+def display_home_v2():
+    if V2==True:
+        mylcd.lcd_display_string("OPEN ", 1,12)
+    else:
+        mylcd.lcd_display_string("CLOSE", 1,12)
+
+def display_page_cursor():
+    global run_cursor
+
+    if pageSelected=="Home":
+        mylcd.lcd_display_string(" ",0 ,2 )
+        mylcd.lcd_display_string(" ",0 ,10 )
+        mylcd.lcd_display_string(" ",1 ,1 )
+        mylcd.lcd_display_string(" ",1 ,9 )
+        mylcd.lcd_display_string(" ",1 ,10 )
+        mylcd.lcd_display_string(" ",1 ,18 )
+        mylcd.lcd_display_string(" ",3 ,6 )
+        mylcd.lcd_display_string(">", home_cursor[0], home_cursor[1])
+
+    elif pageSelected=="Run":
+        # c=[[1,4],[3,1],[3,11]]
+        mylcd.lcd_display_string(" ",1 ,4 )
+        mylcd.lcd_display_string(" ",3 ,1 )
+        mylcd.lcd_display_string(" ",3 ,11 )
+        mylcd.lcd_display_string(" ",1 ,11 )
+        mylcd.lcd_display_string(" ",1 ,14 )
+        mylcd.lcd_display_string(">", run_cursor[0], run_cursor[1])
+    
+    elif pageSelected=="Create":
+        # create_cursors=[[2,8],[3,0],[3,12]]
+        mylcd.lcd_display_string(" ",2 ,8 )
+        mylcd.lcd_display_string(" ",3 ,0 )
+        mylcd.lcd_display_string(" ",3 ,12 )
+        mylcd.lcd_display_string(" ",2 ,11 )
+        mylcd.lcd_display_string(">", create_cursor[0], create_cursor[1])
+
+    elif pageSelected=="Running":
+        # running_cursors=[4,0],[3,0],[3,11]
+        mylcd.lcd_display_string(" ",3 ,0 )
+        mylcd.lcd_display_string(" ",3 ,11 )
+        mylcd.lcd_display_string(">", running_cursor[0], running_cursor[1])
+
+    elif pageSelected=="Abort":
+        # abort_cursors=[3,12],[3,2]
+        for x in range(0,len(abort_cursors)):
+            if x != abort_cursor_pos:
+                mylcd.lcd_display_string(" ",abort_cursors[x][0] ,abort_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",abort_cursors[x][0] ,abort_cursors[x][1] )
+
+    elif pageSelected=="Confirm_shutdown":
+        # abort_cursors=[3,12],[3,2]
+        for x in range(0,len(abort_cursors)):
+            if x != abort_cursor_pos:
+                mylcd.lcd_display_string(" ",abort_cursors[x][0] ,abort_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",abort_cursors[x][0] ,abort_cursors[x][1] )
+    
+    elif pageSelected=="Confirm_del":
+        # abort_cursors=[3,12],[3,2]
+        for x in range(0,len(confirm_del_cursors)):
+            if x != confirm_del_cursor_pos:
+                mylcd.lcd_display_string(" ",confirm_del_cursors[x][0] ,confirm_del_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",confirm_del_cursors[x][0] ,confirm_del_cursors[x][1] )    
+
+    elif pageSelected=="Input_states":
+        # input_states_cursors=[[0,0],[0,10],[1,5],[3,0],[3,13]]
+        mylcd.lcd_display_string("                    ",2 ,0 )
+        mylcd.lcd_display_string(" ",0 ,9)
+        mylcd.lcd_display_string(" ",1 ,5)
+        mylcd.lcd_display_string(" ",0 ,19)
+        for x in range(0,len(input_states_cursors)):
+            if x != input_states_cursor_pos:
+                mylcd.lcd_display_string(" ",input_states_cursors[x][0] ,input_states_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",input_states_cursors[x][0] ,input_states_cursors[x][1] )  
+
+    elif pageSelected=="Edit_input_states":
+        # input_states_cursors=[[0,0],[0,10],[1,5],[3,0],[3,13]]
+        mylcd.lcd_display_string("                    ",2 ,0 )
+        mylcd.lcd_display_string(" ",0 ,9)
+        mylcd.lcd_display_string(" ",1 ,5)
+        mylcd.lcd_display_string(" ",0 ,19)
+        for x in range(0,len(input_states_cursors)):
+            if x != input_states_cursor_pos:
+                mylcd.lcd_display_string(" ",input_states_cursors[x][0] ,input_states_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",input_states_cursors[x][0] ,input_states_cursors[x][1] )  
+
+    elif pageSelected=="Edit":
+        mylcd.lcd_display_string(" ",1 ,11 )
+        mylcd.lcd_display_string(" ",1 ,14 )
+        mylcd.lcd_display_string(" ",1 ,4)
+        for x in range(0,len(edit_cursors)):
+            if x != edit_cursor_pos:
+                mylcd.lcd_display_string(" ",edit_cursors[x][0] ,edit_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",edit_cursors[x][0] ,edit_cursors[x][1] )
+
+    elif pageSelected=="Op_select":
+        for x in range(0,len(op_select_cursors)):
+            if x != op_select_cursor_pos:
+                mylcd.lcd_display_string(" ",op_select_cursors[x][0] ,op_select_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",op_select_cursors[x][0] ,op_select_cursors[x][1] )
+    
+
+    elif pageSelected=="View":
+        mylcd.lcd_display_string(" ",1 ,11 )
+        mylcd.lcd_display_string(" ",1 ,14 )
+        mylcd.lcd_display_string(" ",1 ,4)
+        for x in range(0,len(view_cursors)):
+            if x != view_cursor_pos:
+                mylcd.lcd_display_string(" ",view_cursors[x][0] ,view_cursors[x][1] )
+            else:
+                mylcd.lcd_display_string(">",view_cursors[x][0] ,view_cursors[x][1] )
+
+def display_run():
+    global pageSelected
+    pageSelected="Run" 
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("       |Run|       ", 0)
+    mylcd.lcd_display_string("     Recipe -      ", 1)
+    mylcd.lcd_display_string("  |Start|   |Menu|  ", 3)
+    # display_run_recipe_no()
+    display_page_cursor()
+
+def display_run_recipe_no():
+    mylcd.lcd_display_string("  ", 1, 12)
+    mylcd.lcd_display_string(str(run_recipe_no+1), 1, 12)
+
+def display_view():
+    global pageSelected
+    pageSelected="View" 
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("       |View|       ", 0)
+    mylcd.lcd_display_string("     Recipe -      ", 1)
+    mylcd.lcd_display_string(" |Proceed|   |Menu| ", 3)
+    # display_view_recipe_no()
+    display_page_cursor()
+
+def display_view_recipe_no():
+    mylcd.lcd_display_string("  ", 1, 12)
+    mylcd.lcd_display_string(str(view_recipe_no+1), 1, 12)  
+
+def display_create():
+    global pageSelected
+    pageSelected="Create" 
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("      |Create|      ", 0)
+    mylcd.lcd_display_string("Enter No. of States:", 1)
+    mylcd.lcd_display_string("-", 2,9)
+    mylcd.lcd_display_string(" |Preceed|   |Menu| ", 3)
+    display_page_cursor()
+    # display_create_state_no()
+
+def display_create_state_no():
+    mylcd.lcd_display_string("  ", 2, 9)
+    mylcd.lcd_display_string(str(total_state_no+1), 2, 9)
+
+def display_input():
+    global pageSelected
+    global input_states_cursor_pos
+    global input_states_cursor
+    pageSelected = "Input_states"
+    input_states_cursor_pos = 0
+    input_states_cursor = input_states_cursors[0] 
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string(" VT:-----  VC:----- ",0)
+    mylcd.lcd_display_string("      hh:mm:ss      ",1)
+    mylcd.lcd_display_string("                    ",2)
+    mylcd.lcd_display_string(" |Next| " + str(input_curr_state_no + 1) +"/" + str(total_state_no + 1), 3)
+    if input_curr_state_no == 0:
+        mylcd.lcd_display_string("|Menu|",3,14)
+    else:
+        mylcd.lcd_display_string("|Back|",3,14)
+    if input_curr_state_no == total_state_no:
+        mylcd.lcd_display_string("|Fin| ",3,1)
+    display_page_cursor()
+
+def display_input_states():
+    if vn == True:
+        mylcd.lcd_display_string("OPEN ",0,4)
+    else:
+        mylcd.lcd_display_string("CLOSE",0,4) 
+
+    if vc == True:
+        mylcd.lcd_display_string("OPEN ",0,14)
+    else:
+        mylcd.lcd_display_string("CLOSE",0,14)       
+
+def display_input_time():
+    mylcd.lcd_display_string(hours[hours_pos],1,6)
+    mylcd.lcd_display_string(mins[mins_pos],1,9)
+    mylcd.lcd_display_string(secs[secs_pos],1,12)
+
+def display_edit_input_states():
+    global pageSelected
+    global input_states_cursor_pos
+    global input_states_cursor
+    pageSelected = "Edit_input_states"
+    input_states_cursor_pos = 0
+    input_states_cursor = input_states_cursors[0] 
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string(" VT:-----  VC:----- ",0)
+    mylcd.lcd_display_string("      hh:mm:ss      ",1)
+    mylcd.lcd_display_string("                    ",2)
+    mylcd.lcd_display_string(" |Save| " + str((edit_recipe_state_no) + 1) +"/" + str(len(kernelr[edit_recipe_no]['states']['stateList'])), 3)
+    mylcd.lcd_display_string("|Back|",3,14)
+    retrive_saved_state_2()
+    display_page_cursor()
+
+def retrive_saved_state_2():
+    global vn
+    global vc
+    global hours_pos 
+    global mins_pos
+    global secs_pos
+    global edit_recipe_state_no
+    global edit_recipe_no
+    global kernelr
+    st = kernelr[edit_recipe_no]['states']['stateList'][edit_recipe_state_no]
+    secs_pos = kernelr[edit_recipe_no]['states']['times'][edit_recipe_state_no]
+    vn = True if st[0]==1 else False
+    vc = True if st[1]==1 else False
+    hours_pos=secs_pos // (60*60)
+    secs_pos %= (60*60)
+    mins_pos = secs_pos // 60
+    secs_pos %= 60
+    hours_pos = int(hours_pos) 
+    mins_pos = int(mins_pos)
+    secs_pos = int(secs_pos)                
+    display_input_time()
+    display_input_states()
+    print(st)
+    print(secs_pos) 
+
+def display_running():
+    global fontdata1
+    global pageSelected
+    pageSelected="Running"
+    mylcd.lcd_clear()
+    if run_recipe_no < 10:
+        disp_r_no = "0" + str(run_recipe_no+1)
+    else:
+        disp_r_no = str(run_recipe_no+1)
+    mylcd.lcd_display_string("|" + disp_r_no + "|", 0)
+    
+    threadObj.display_running_state()
+    mylcd.lcd_display_string(" ", 2)
+    mylcd.lcd_display_string("                    ", 2)
+    mylcd.lcd_display_string(" |Pause|    |Abort| ", 3)
+    threadObj.refreshDisplayTimer=0
+    threadObj.display_progress()
+    threadObj.display_running_state()
+    display_running_pr(threadObj.paused)
+    
+
+def display_running_pr(psd):
+    if psd==True:
+        mylcd.lcd_display_string("Paused...",0,5)
+        mylcd.lcd_display_string("Resume|",3,2)
+    else:
+        mylcd.lcd_display_string("Running..",0,5)
+        mylcd.lcd_display_string("Pause| ",3,2)
+
+def display_edit():
+    global pageSelected
+    pageSelected="Edit"
+    mylcd.lcd_clear()
+    mylcd.lcd_display_string("      |Edit|       ", 0)
+    mylcd.lcd_display_string("     Recipe -       ", 1)
+    # mylcd.lcd_display_string("     Action        ", 2)
+    mylcd.lcd_display_string(" |Edit| |Del| |Menu|", 3)
+    # display_run_recipe_no()
+    display_page_cursor()
+
+def display_edit_recipe_no():
+    mylcd.lcd_display_string("  ", 1, 12)
+    mylcd.lcd_display_string(str(edit_recipe_no+1), 1, 12)
+
+def display_recipe(r_no):
+    global pageSelected
+    global menuSelected
+    global menuItems
+    global cursorLine
+    global displayFirstLine
+    mylcd.lcd_display_string("|" + str(r_no+1) + "|" , 0,0)
+    recipe_list = dict_to_list(kernelr[r_no])
+    print(recipe_list)
+    displayFirstLine = 1       #//initialize display_menu to 1st line
+    cursorLine = 1
+    menuSelected = recipe_list
+    menuItems = len(menuSelected)
+    # display_menu(recipe_list, len(recipe_list))
+    chooseMenu() 
+    
+def display_abort():
+    mylcd.lcd_display_string("                    ",1)
+    mylcd.lcd_display_string("Are you sure..",1,3)
+    mylcd.lcd_display_string("                    ",2)
+    mylcd.lcd_display_string("   |Yes|     |No|   ",3)
+
+# def auto_cancel_abort():
+#     global timer
+#     if threadObj.running == True and threadObj.aborted == False and abort_cancelled == False:
+#         pageSelected="Running"
+#         display_running()
+#         threadObj.display_current_info()    
+#     timer.cancel()
+#     print("abort cancelled")
+
+def display_confirm_shutdown():
+    mylcd.lcd_display_string("     |Shutdown|     ",0)
+    mylcd.lcd_display_string("                    ",1)
+    mylcd.lcd_display_string("Are you sure..",1,3)
+    mylcd.lcd_display_string("                    ",2)
+    mylcd.lcd_display_string("   |Yes|     |No|   ",3)
+
+def display_confirm_del():
+    mylcd.lcd_display_string("                    ",1)
+    mylcd.lcd_display_string("Are you sure..",1,3)
+    mylcd.lcd_display_string("                    ",2)
+    mylcd.lcd_display_string("   |Yes|     |No|   ",3)
+
+def display_menu(menuInput,ROWS):
+    if pageSelected == "Menu":    
+        n=4
+        mylcd.lcd_clear()
+        mylcd.lcd_display_string("       |Menu|       ",0)
+        
+        if ROWS < n-1:
+            n=ROWS + 1   
+        for x in range(n-1):
+            mylcd.lcd_display_string(menuInput[displayFirstLine + x-1], x+1, 1)
+            
+        mylcd.lcd_display_string(">", (cursorLine - displayFirstLine) + 1)
+    
+    elif pageSelected == "Recipe_list":
+        n=4
+        mylcd.lcd_clear()
+        mylcd.lcd_display_string("|" + str(view_recipe_no + 1) + "|",0)
+        mylcd.lcd_display_string("VN VC hh:mm:ss",0,4)
+        
+        if ROWS < n-1:
+            n=ROWS + 1   
+        for x in range(n-1):
+            mylcd.lcd_display_string(menuInput[displayFirstLine + x-1], x+1, 1)
+            
+        mylcd.lcd_display_string(">", (cursorLine - displayFirstLine) + 1)
+    
+    elif pageSelected == "Recipe_edit":
+        n=4
+        mylcd.lcd_clear()
+        mylcd.lcd_display_string("|" + str(edit_recipe_no + 1) + "|",0)
+        mylcd.lcd_display_string("VN VC hh:mm:ss",0,4)
+        
+        if ROWS < n-1:
+            n=ROWS + 1   
+        for x in range(n-1):
+            mylcd.lcd_display_string(menuInput[displayFirstLine + x-1], x+1, 1)
+            
+        mylcd.lcd_display_string(">", (cursorLine - displayFirstLine) + 1)
+
+def move_down():
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    
+    if cursorLine == (displayFirstLine + itemsPerScreen-1):
+        displayFirstLine += 1
+    
+    if cursorLine == menuItems:
+        cursorLine=1
+        displayFirstLine=1
+    else:
+        cursorLine = cursorLine + 1
+    
+def move_up():
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    if (displayFirstLine == 1) and (cursorLine == 1):
+        if menuItems > (itemsPerScreen-1):
+            displayFirstLine = menuItems - itemsPerScreen+1
+            print(displayFirstLine)
+    elif displayFirstLine == cursorLine:
+        displayFirstLine-=1
+        print("elseif")
+        print(displayFirstLine)
+    
+    if cursorLine == 1:
+        if menuItems > itemsPerScreen-1:
+            cursorLine = menuItems
+            print(cursorLine)
+    else:
+        cursorLine = cursorLine - 1
+        print("C-")
+
+def rotary_cycle(var_list,pos,dir):
+    n=len(var_list)
+    if dir==1:
+        if pos==n-1:
+            pos=0
+        else:
+            pos = pos + 1
+    elif dir==0:
+        if pos==0:
+            pos=n-1
+        else:
+            pos = pos - 1
+    return pos
+
+def chooseMenu():
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    if menuOption == SubMenu7:
+        print("7")
+        # display_summary()
+    else:
+        display_menu(menuSelected, menuItems)
+
+def selectionMainMenu():
+    
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    global menuOption
+    global menuSelected
+    global volumeHandler
+    global Summary
+    global volume
+    global power
+    global pageSelected
+    if volumeHandler == True:
+        Summary[4] = volume   #Sets the volume...
+        volumeHandler = False
+        volume = 0
+        returnToMainMenu()
+    else:
+        mylcd.lcd_clear()
+        switch=cursorLine - 1
+        if switch==0:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # menuItems = len(One)
+            # menuSelected = One
+            # menuOption = SubMenu1
+            display_run()
+
+        elif switch==1:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # menuItems = len(Two)
+            # menuSelected = Two
+            # menuOption = SubMenu2
+            display_create()
+        elif switch==2:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # menuItems = len(Three)
+            # menuSelected = Three
+            # menuOption = SubMenu3
+            display_edit()
+
+        elif switch==3:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # menuItems = len(Four)
+            # menuSelected = Four
+            # menuOption = SubMenu4
+            display_view()
+
+        elif switch==4:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # mylcd.lcd_display_string("Please set the ", 0)
+            # mylcd.lcd_display_string("Volume and click", 1)
+            # volumeHandler = True
+            # volume = Summary[4]
+            # mylcd.lcd_display_string(volume, 3)
+            pageSelected = "Home"
+            display_home()
+
+        elif switch==6:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # Reset()
+            returnToMainMenu()
+            
+        elif switch==5:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            # menuItems = len(startMenu)
+            # menuSelected = Six
+            # menuOption = SubMenu6
+            pageSelected = "Confirm_shutdown"
+            display_confirm_shutdown()
+            
+            
+        elif switch==7:
+            displayFirstLine = 1       #//initialize display_menu to 1st line
+            cursorLine = 1             #//initialize display_menu to 1st line
+            menuItems = len(startMenu)
+            menuSelected = One
+            menuOption = SubMenu7
+
+def selectionStateNo():
+    global pageSelected
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    global menuOption
+    global menuSelected
+    global volumeHandler
+    global Summary
+    global volume
+    global edit_recipe_state_no
+    global kernelr
+    global operation
+    mylcd.lcd_clear()
+    if (cursorLine-1) == len(kernelr[edit_recipe_no]['states']['stateList']):
+        pageSelected = "Edit"
+        display_edit()
+    else:
+        edit_recipe_state_no = cursorLine - 1
+        pageSelected = "Op_select"
+        display_operation_select(edit_recipe_no, edit_recipe_state_no)
+
+def mod_recipe(r_no,  s_no, op):
+    new_state = format_states()
+    new_time = format_time()
+    if op == "edit":
+        kernelr[r_no]['states']['stateList'][s_no] = new_state
+        kernelr[r_no]['states']['times'][s_no] = new_time
+        with open('kernelr.json', 'w') as fp:
+            json.dump(kernelr, fp, indent = 4)
+            fp.close()        
+
+    elif op == "add":
+        kernelr[r_no]['states']['stateList'].insert(s_no + 1, new_state)
+        kernelr[r_no]['states']['times'].insert(s_no + 1, new_time)
+        with open('kernelr.json', 'w') as fp:
+            json.dump(kernelr, fp, indent = 4)
+            fp.close()                 
+
+    elif op == "del":
+        del kernelr[r_no]['states']['stateList'][s_no]
+        del kernelr[r_no]['states']['times'][s_no]
+        kernelr[r_no]['nStates'] = len(kernelr[r_no]['states']['stateList'])
+        with open('kernelr.json', 'w') as fp:
+            json.dump(kernelr, fp, indent = 4)
+            fp.close()
+
+def display_operation_select(r_no, s_no):
+    global kernelr
+    mylcd.lcd_clear()
+    curr_string = "" 
+    for x in kernelr[r_no]['states']['stateList'][s_no]:
+        curr_string += "OP" if (x == 1) else "CL"
+        curr_string += " "
+    curr_string += format_sec_to_hhmmss(kernelr[r_no]['states']['times'][s_no])
+    
+    mylcd.lcd_display_string(curr_string,1,3)
+    mylcd.lcd_display_string("|" + str(r_no+1) + "|" , 0,0)
+    mylcd.lcd_display_string("State No: "+ str(s_no+1) + "   ",0,5)
+    mylcd.lcd_display_string(" |Edit| |Add| |Del|", 2)
+    mylcd.lcd_display_string("       |Back|       ", 3,0)
+    
+def returnToMainMenu():
+    global cursorLine
+    global displayFirstLine
+    global itemsPerScreen
+    global menuItems
+    global menuOption
+    global menuSelected
+    global pageSelected
+    displayFirstLine = 1
+    cursorLine = 1
+    pageSelected = "Menu"
+    menuItems = len(startMenu)
+    menuSelected = startMenu
+    menuOption = MainMenu
+
+def dict_to_list(dict):
+    output = []
+    for i in range(len(dict['states']['stateList'])):
+        curr_string = "" 
+        curr_string = str(i+1) +") "
+        for x in dict['states']['stateList'][i]:
+            curr_string += "OP" if (x == 1) else "CL"
+            curr_string += " "
+        curr_string += format_sec_to_hhmmss(dict['states']['times'][i])
+        output.append(curr_string)
+    output.append("|Back|")
+    return output
+
+def format_sec_to_hhmmss(seconds):
+    hr=seconds // (60*60)
+    seconds %= (60*60)
+    minutes = seconds // 60
+    seconds %= 60
+    return "%02i:%02i:%02i" % (hr, minutes, seconds) 
+
+
+def lcd_clear():
+    mylcd.lcd_clear()
+
+def manual_fire_valves():
+    global V1
+    global V2
+    print("Fire_M")
+    if V1 == True:    
+        GPIO.output(VENT_VALVE , GPIO.HIGH)
+        print("V1 H")
+    elif V1 == False:
+        GPIO.output(VENT_VALVE , GPIO.LOW)
+        print("V1 L")
+
+    if V2 == True:    
+        GPIO.output(VAC_VALVE , GPIO.LOW)
+        print("V2 H")
+    elif V2 == False:
+        GPIO.output(VAC_VALVE , GPIO.HIGH)
+        print("V2 L")
+
+def default_fire_valves():
+    global V1
+    global V2
+    V1 = True
+    V2 = False 
+    GPIO.output(VAC_VALVE , GPIO.HIGH)
+    GPIO.output(VENT_VALVE , GPIO.HIGH)
+
+def restart():
+        mylcd.lcd_clear()
+        mylcd.lcd_display_string("Restarting", 3,0)
+        sleep(2)
+        # print("argv was",sys.argv)
+        # print("sys.executable was", sys.executable)
+        # print("restart now")
+        # os.execv(sys.executable, ['python'] + sys.argv)
+        os.execv('./restart_hmi.sh',  [''])
+
+
+
+# ky040 = KY040(CLOCKPIN, DATAPIN, SWITCHPIN, rotaryChange, switchPressed, rotaryBouncetime=100, switchBouncetime=100)
+# #ky040 = KY040(CLOCKPIN, DATAPIN, SWITCHPIN, rotaryChange, switchPressed)
+
+# ky040.start()
+# mylcd.lcd_display_string("Hello World!", 3, 5)
+
+# menuItems =  len(startMenu)
+# menuOption = MainMenu
+# menuSelected = startMenu
+# welcome()
+# display_home()
+# display_menu(menuSelected,len(menuSelected))
+
+# try:
+#     while True:
+        #display_home()
+        
+                
+        
+#        if result == "BT_Pressed":
+#            result="NC"
+#            print("BTpressssed")
+#            if menuOption == MainMenu:
+#                selectionMainMenu()
+#            elif menuOption == SubMenu7:
+#                returnToMainMenu()
+#            # else:
+#            #     selectionSubMenu()
+#            
+#            if volumeHandler == False:
+#                chooseMenu()
+#            display_menu(menuSelected, menuItems)
+        
+#         sleep(0.1)
+# finally:
+#     ky040.stop()
+#     GPIO.cleanup()

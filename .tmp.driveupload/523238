@@ -1,0 +1,20 @@
+import { AxiosResponse } from "axios";
+
+type RequestFn = () => Promise<AxiosResponse<unknown>>;
+type Request = Record<string, RequestFn>;
+
+const request: Request = {};
+
+export const registerRequest = (tag: string, fn: RequestFn) => {
+  request[tag] = fn;
+};
+
+export const unregiseterRequest = (tag: string) => {
+  if (request?.[tag]) delete request[tag];
+};
+
+export const refetchRequest = (tags: string[]) => {
+  tags.forEach(async (tag) => {
+    if (request?.[tag]) await request[tag]();
+  });
+};

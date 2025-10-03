@@ -1,0 +1,26 @@
+import { MongoDocument } from "./default.type";
+
+export interface HeaderFooterConfig<T = string> {
+  textName: string;
+  textPosition: string;
+  textSize: string;
+  textFont: string;
+  image: T;
+  width: number;
+  height: number;
+  imagePosition: string;
+  companyName: boolean;
+  calibrate: boolean;
+  reportGenerated: boolean;
+  deviceId: boolean;
+}
+
+export interface HeaderAndFooter<T = string> extends MongoDocument {
+  name: string;
+  header: HeaderFooterConfig<T>;
+  footer: Omit<
+    HeaderFooterConfig<T>,
+    "companyName" | "calibrate" | "reportGenerated" | "deviceId"
+  >;
+  selected: boolean;
+}

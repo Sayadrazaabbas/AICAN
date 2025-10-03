@@ -1,0 +1,74 @@
+import { useSearchParams } from "react-router";
+
+import Header from "@/components/Header";
+import Pagination from "@/components/Pagination";
+import CreateDeviceModal from "@/components/manageDevices/CreateDeviceModal";
+import Container from "@/components/pageLayout/Container";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import useAxios from "@/hooks/useAxios";
+import { PagianteResponse } from "@/types/default.type";
+import { Device } from "@/types/device.type";
+import { PAGINATION_LIMIT } from "@/utils/constants";
+import getPaginationIndex from "@/utils/getPaginationIndex";
+
+export default function ManageDevices() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = +(searchParams?.get("page") || 1);
+  const limit = +(searchParams?.get("limit") || PAGINATION_LIMIT);
+
+  const { response: devicesResponse } = useAxios<PagianteResponse<Device>>({
+    method: "GET",
+    url: `/api/device/query`,
+    params: { page, limit },
+    tag: "devices",
+  });
+
+  const { docs: devices } = devicesResponse?.data || {};
+
+  const handleSearchParam = (key: string, val: string | number) => {
+    setSearchParams((prev) => {
+      prev.set(key, val.toString());
+      return prev;
+    });
+  };
+
+  return (
+    <Container className="overflow-y-auto">
+      <Header title="Manage Devices">
+        <CreateDeviceModal />
+      </Header>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-secondary">
+            <TableHead>#</TableHead>
+            <TableHead>Device ID</TableHead>
+            <TableHead>Device Type</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {devices?.map((device, dIdx) => (
+            <TableRow key={device?._id}>
+              <TableCell>{getPaginationIndex(page, limit, dIdx)}</TableCell>
+              <TableCell>{device?.id}</TableCell>
+              <TableCell>{device?.type}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {devicesResponse?.data && (
+        <Pagination
+          data={devicesResponse?.data}
+          onPageChange={(e) => handleSearchParam("page", e)}
+        />
+      )}
+    </Container>
+  );
+}

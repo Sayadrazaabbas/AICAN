@@ -1,0 +1,9 @@
+import { MongoDocument } from "./default.type";
+
+export interface User extends MongoDocument {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  confirm?: string;
+}

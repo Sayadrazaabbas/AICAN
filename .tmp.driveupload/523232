@@ -1,0 +1,7 @@
+export default function getPaginationIndex(
+  page: number,
+  limit: number,
+  index: number
+) {
+  return limit * (page - 1) + index + 1;
+}

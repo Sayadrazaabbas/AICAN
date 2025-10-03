@@ -1,0 +1,55 @@
+import { PaginateOptions } from "mongoose";
+
+import { Device, DeviceConfig } from "../models";
+import { DeviceConfigType, DeviceType } from "../types/device.type";
+import AppError from "../utils/AppError";
+
+export const createDevice = async (body: DeviceType<DeviceConfigType>) => {
+  const exists = await Device.findOne({ id: body?.id });
+  if (exists) {
+    throw new AppError(
+      400,
+      "Device already exists with the provided Device ID"
+    );
+  }
+
+  const config = new DeviceConfig(body.deviceConfigId);
+  const device = new Device(body);
+
+  device.deviceConfigId = config._id;
+  config.deviceId = device._id;
+
+  await config.save();
+  await device.save();
+
+  return device;
+};
+
+export const getDevices = async () => {
+  const devices = await Device.find();
+  return devices;
+};
+
+export const getDeviceById = async (id: string) => {
+  const device = await Device.findById(id).populate("deviceConfigId");
+  return device;
+};
+
+export const queryDevices = async (
+  filter: Record<string, unknown>,
+  options: PaginateOptions
+) => {
+  const devices = await Device.paginate(filter, options);
+  return devices;
+};
+
+export const updateDeviceConfig = async (
+  id: string,
+  body: DeviceConfigType
+) => {
+  const config = await DeviceConfig.findByIdAndUpdate(id, body);
+  if (!config) {
+    throw new AppError(404, "Failed to update config, not found or deleted.");
+  }
+  return config;
+};

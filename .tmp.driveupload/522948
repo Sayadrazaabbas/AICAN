@@ -1,0 +1,12 @@
+/* eslint-disable import/prefer-default-export */
+import { Request, Response } from "express";
+import expressAsyncHandler from "express-async-handler";
+
+import { mqttSocketService } from "../services";
+
+export const getSocketConfig = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const config = mqttSocketService.getSocketConfig();
+    res.status(200).send(config);
+  }
+);

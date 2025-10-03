@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2023-12-22T11:09:10Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "PH_Amplifier_V_1.1.2"
+        },
+        "Owner": "Sayad Raza Abbas <razaabbascnc@gmail.com>",
+        "Size": {
+            "X": 41.6965,
+            "Y": 22.5
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "*.ts": [
+    "prettier --write",
+    "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+  ]
+}

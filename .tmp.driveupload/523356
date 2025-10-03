@@ -1,0 +1,211 @@
+import { Loader2, Save } from "lucide-react";
+import {
+  ChangeEvent,
+  MouseEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
+
+import useAxios from "@/hooks/useAxios";
+import { User } from "@/types/user.type";
+import { refetchRequest } from "@/utils/axiosStore";
+
+import Select from "../Select";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+
+const DEFAULT_FORMDATA: User = {
+  name: "",
+  email: "",
+  password: "",
+  confirm: "",
+  role: "",
+};
+
+export default function CreateUserModal() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState<User>(DEFAULT_FORMDATA);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const { request: createUser, loading: createUserLoading } = useAxios<User>({
+    method: "POST",
+    url: "/api/user/register",
+  });
+
+  const { request: editUser, loading: editUserLoading } = useAxios<User>({
+    method: "PUT",
+    url: `/api/user/${id}`,
+  });
+
+  const { response: userData } = useAxios<User>({
+    method: "GET",
+    url: `/api/user/${id}`,
+    skip: !id,
+  });
+
+  useEffect(() => {
+    if (userData?.data?.name) {
+      setFormData({
+        ...DEFAULT_FORMDATA,
+        name: userData?.data?.name,
+        email: userData?.data?.email,
+        role: userData?.data?.role,
+      });
+    }
+  }, [userData?.data]);
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { value, name } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit: MouseEventHandler<HTMLButtonElement> = async (e) => {
+    e.preventDefault();
+
+    if (formData?.password !== formData?.confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    const { data } = await (id ? editUser : createUser)({ body: formData });
+    if (triggerRef?.current && data) {
+      refetchRequest(["users"]);
+      setFormData(DEFAULT_FORMDATA);
+      if (id) {
+        navigate("/settings/users");
+        toast.success("User Updated");
+      } else {
+        triggerRef.current.click();
+
+        toast.success("User created");
+      }
+    }
+  };
+
+  const loading = createUserLoading || editUserLoading;
+
+  return (
+    <Dialog
+      key={id}
+      defaultOpen={!!id}
+      onOpenChange={(e) => {
+        if (!e && id) {
+          navigate("/settings/users");
+          setFormData(DEFAULT_FORMDATA);
+        }
+      }}
+    >
+      <DialogTrigger ref={triggerRef} asChild>
+        <Button type="button">Create</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{id ? "Edit" : "Create new"} User</DialogTitle>
+          <DialogDescription>
+            You can {id ? "edit" : "create new"} user here.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <div>
+            <Label className="mb-1" htmlFor="name">
+              Name
+            </Label>
+            <Input
+              id="name"
+              value={formData?.name}
+              onChange={handleInputChange}
+              name="name"
+              required
+            />
+          </div>
+
+          <div className="mt-3">
+            <Label className="mb-1" htmlFor="email">
+              Email
+            </Label>
+            <Input
+              id="email"
+              value={formData?.email}
+              onChange={handleInputChange}
+              name="email"
+              type="email"
+              required
+            />
+          </div>
+
+          <div className="mt-3">
+            <Label className="mb-1" htmlFor="role">
+              Role
+            </Label>
+            <Select
+              id="role"
+              value={formData?.role}
+              options={[
+                { label: "Admin", value: "admin" },
+                { label: "User", value: "user" },
+              ]}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, role: val }))
+              }
+              required
+            />
+          </div>
+
+          <div className="mt-3">
+            <Label className="mb-1" htmlFor="password">
+              Password
+            </Label>
+            <Input
+              id="password"
+              value={formData?.password}
+              onChange={handleInputChange}
+              name="password"
+              type="password"
+              required
+            />
+          </div>
+
+          <div className="mt-3">
+            <Label className="mb-1" htmlFor="confirm">
+              Confirm Password
+            </Label>
+            <Input
+              id="confirm"
+              value={formData?.confirm}
+              onChange={handleInputChange}
+              name="confirm"
+              type="password"
+              required
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" disabled={loading} onClick={handleSubmit}>
+            {loading ? <Loader2 className="animate-spin" /> : <Save />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

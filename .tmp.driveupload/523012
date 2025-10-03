@@ -1,0 +1,17 @@
+import mongoose from "mongoose";
+
+import models from "../constanst/model.constant";
+import { IMediaDocument } from "../types/media.type";
+
+const MediaSchema = new mongoose.Schema<IMediaDocument>(
+  {
+    name: { type: String, required: true },
+    data: { type: String, required: true },
+    type: { type: String, required: true },
+  },
+  { timestamps: true }
+);
+
+const Media = mongoose.model<IMediaDocument>(models.media, MediaSchema);
+
+export default Media;

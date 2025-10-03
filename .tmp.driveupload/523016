@@ -1,0 +1,47 @@
+import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+
+import models from "../constanst/model.constant";
+import {
+  HeaderFooterConfig,
+  IHeaderAndFooterDocument,
+} from "../types/headerAndFooter.type";
+
+const HeaderFooterConfigSchema = new mongoose.Schema<HeaderFooterConfig>({
+  textName: { type: String, required: true },
+  textPosition: { type: String, required: true },
+  textSize: { type: String, required: true },
+  textFont: { type: String, required: true },
+  image: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: models.media,
+  },
+  width: { type: Number },
+  height: { type: Number },
+  imagePosition: { type: String },
+  companyName: { type: Boolean },
+  calibrate: { type: Boolean },
+  reportGenerated: { type: Boolean },
+  deviceId: { type: Boolean },
+});
+
+const HeaderAndFooterSchema = new mongoose.Schema<IHeaderAndFooterDocument>(
+  {
+    name: { type: String, required: true },
+    header: { type: HeaderFooterConfigSchema },
+    footer: { type: HeaderFooterConfigSchema },
+    selected: { type: Boolean, default: false },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+HeaderAndFooterSchema.plugin(mongoosePaginate);
+
+const HeaderAndFooter = mongoose.model<
+  IHeaderAndFooterDocument,
+  mongoose.PaginateModel<IHeaderAndFooterDocument>
+>(models.headerAndFooter, HeaderAndFooterSchema);
+
+export default HeaderAndFooter;

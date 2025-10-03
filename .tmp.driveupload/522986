@@ -1,0 +1,48 @@
+import { NextFunction, Request, RequestHandler, Response } from "express";
+import jwt from "jsonwebtoken";
+
+import { config } from "../config";
+import { User } from "../models";
+import AppError from "../utils/AppError";
+
+export const ACCESS = {
+  superuser: ["superuser"],
+  admin: ["superuser", "admin"],
+  user: ["superuser", "admin", "user"],
+};
+
+const authenticateToken =
+  (roles: string[]): RequestHandler =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req?.headers.authorization;
+
+    const token: string = authHeader?.split(" ")?.[1] || "";
+
+    if (!token) {
+      next(new AppError(401, "Token is missing"));
+    }
+
+    try {
+      const payload = jwt.verify(token, config.jwtAccessSecret);
+      if (typeof payload !== "string") {
+        if (!payload?.userId)
+          next(new AppError(401, "Invalid or expired Token"));
+
+        const user = await User.findById(payload?.userId);
+        if (!user) {
+          next(new AppError(401, "Invalid or expired Token"));
+          return;
+        }
+
+        if (!roles?.includes(user?.role)) {
+          next(new AppError(403, "You do not have access"));
+        }
+        req.user = user;
+        next();
+      }
+    } catch (error) {
+      next(new AppError(401, "Invalid or expired Token"));
+    }
+  };
+
+export default authenticateToken;

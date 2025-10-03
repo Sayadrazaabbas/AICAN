@@ -1,0 +1,115 @@
+import { useEffect, useState } from "react";
+import { useBlocker, useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
+
+import DashboardPanel from "@/components/dashboard/DashboardPanel";
+import Alarm from "@/components/dashboard/alarm/Alarm";
+import AlarmSetup from "@/components/dashboard/alarm/AlarmSetup";
+import CalibrationTable from "@/components/dashboard/calibration/CalibrationTable";
+import LogsGraph from "@/components/dashboard/chart/LogsGraph";
+import LogTable from "@/components/dashboard/log/LogTable";
+import Container from "@/components/pageLayout/Container";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useAxios from "@/hooks/useAxios";
+import { Device, DeviceConfig } from "@/types/device.type";
+
+const TABS = ["Calibrate", "Log", "Graph", "Alarm"];
+
+export default function Dashboard() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [selectedTab, setSelectedTab] = useState("Calibrate");
+  const [disableTabs, setDisableTabs] = useState(false);
+
+  const { response: deviceResponse } = useAxios<Device<DeviceConfig>>({
+    method: "GET",
+    url: `/api/device/${id}`,
+    skip: !id,
+    tag: "device-id",
+  });
+  const { data: deviceData } = deviceResponse || {};
+
+  const blocker = useBlocker(disableTabs);
+
+  useEffect(() => {
+    if (blocker?.state === "blocked") {
+      toast.warning(
+        `Please complete ${selectedTab === "Calibrate" ? "calibration" : selectedTab === "Log" ? "Logging" : ""} before navigating`
+      );
+      blocker?.reset();
+    }
+  }, [blocker, selectedTab]);
+
+  return (
+    <>
+      <Container>
+        <Tabs
+          defaultValue={selectedTab}
+          className="h-full w-full overflow-hidden"
+        >
+          <div className="flex w-full justify-between gap-2">
+            <div className="overflow-x-auto">
+              <TabsList id="dashboard-tabs">
+                {TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className="w-32"
+                    disabled={disableTabs}
+                    onClick={() => setSelectedTab(tab)}
+                  >
+                    {tab}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            <Button
+              size="sm"
+              disabled={disableTabs}
+              onClick={() => navigate("/")}
+            >
+              Back
+            </Button>
+          </div>
+
+          {deviceData && (
+            <DashboardPanel deviceData={deviceData} seletedTab={selectedTab} />
+          )}
+
+          <Alarm
+            deviceId={deviceData?.id || ""}
+            min={deviceData?.deviceConfigId?.alarm?.minPh || 0}
+            max={deviceData?.deviceConfigId?.alarm?.maxPh || 0}
+          />
+
+          <TabsContent value="Calibrate" className="h-full overflow-y-auto">
+            {deviceData && (
+              <CalibrationTable
+                deviceData={deviceData}
+                setDisableTabs={setDisableTabs}
+              />
+            )}
+          </TabsContent>
+          <TabsContent value="Log" className="h-full overflow-y-auto">
+            {deviceData && (
+              <LogTable
+                deviceData={deviceData}
+                disabled={disableTabs}
+                setDisableTabs={setDisableTabs}
+              />
+            )}
+          </TabsContent>
+          <TabsContent value="Graph" className="h-full overflow-y-auto">
+            {deviceData && <LogsGraph />}
+          </TabsContent>
+
+          <TabsContent value="Alarm" className="h-full overflow-y-auto">
+            {deviceData && <AlarmSetup deviceData={deviceData} />}
+          </TabsContent>
+        </Tabs>
+      </Container>
+    </>
+  );
+}

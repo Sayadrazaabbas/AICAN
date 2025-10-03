@@ -1,0 +1,148 @@
+import axios, { AxiosError } from "axios";
+import { Loader2, UserPlus } from "lucide-react";
+import { ChangeEventHandler, FormEventHandler, useState } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+
+import { User } from "@/types/user.type";
+
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+
+const DEFAULT_INPUT_DATA: User = {
+  name: "",
+  email: "",
+  password: "",
+  confirm: "",
+  role: "user",
+};
+
+export default function RegisterForm() {
+  const navigate = useNavigate();
+
+  const [inputData, setInputData] = useState<User>(DEFAULT_INPUT_DATA);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleInputChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const { name, value } = e.target;
+    setInputData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+
+    if (inputData?.password !== inputData?.confirm) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.post("/api/user/register", {
+        name: inputData?.name,
+        email: inputData?.email,
+        password: inputData?.password,
+      });
+
+      toast.success("Account created.");
+    } catch (error) {
+      toast.error(
+        error instanceof AxiosError
+          ? error?.response?.data?.message ||
+              error?.message ||
+              "Something went wrong try again later"
+          : "Something went wrong try again later"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <form className="p-6 md:p-8" onSubmit={handleSubmit}>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center text-center">
+            <h1 className="text-2xl font-bold">Welcome</h1>
+            <p className="text-muted-foreground text-balance">
+              Create your account
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              name="name"
+              value={inputData?.name || ""}
+              onChange={handleInputChange}
+              placeholder="Firstname Lastname"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              value={inputData?.email || ""}
+              onChange={handleInputChange}
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <Label htmlFor="password">Password</Label>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              value={inputData?.password || ""}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <Label htmlFor="confirm">Confirm Password</Label>
+            </div>
+            <Input
+              id="confirm"
+              type="password"
+              name="confirm"
+              value={inputData?.confirm || ""}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : <UserPlus />}
+            Register
+          </Button>
+          <div className="text-center text-sm">
+            Already have an account?
+            <Button
+              type="button"
+              variant="link"
+              className="p-0 text-sm underline underline-offset-4"
+              onClick={() => navigate("/login")}
+            >
+              Sign in
+            </Button>
+          </div>
+        </div>
+      </form>
+      <div className="bg-muted relative hidden md:block">
+        <img
+          src="/auth_bg.png"
+          alt="auth_bg"
+          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        />
+      </div>
+    </>
+  );
+}

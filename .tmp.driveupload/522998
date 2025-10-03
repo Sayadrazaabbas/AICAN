@@ -1,0 +1,12 @@
+import mqtt from "mqtt";
+
+import config from "./config";
+import logger from "./logger";
+
+const client = mqtt.connect(config.mqtt.url);
+
+client.on("connect", () => {
+  logger.info("Mqtt broker connected");
+});
+
+export default client;

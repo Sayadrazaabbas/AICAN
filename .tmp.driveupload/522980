@@ -1,0 +1,14 @@
+import { Router } from "express";
+
+import { mqttSocketController } from "../controllers";
+import authenticateToken, { ACCESS } from "../middlewares/authenticatToken";
+
+const router: Router = Router();
+
+router.get(
+  "/",
+  authenticateToken(ACCESS.user),
+  mqttSocketController.getSocketConfig
+);
+
+export default router;

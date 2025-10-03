@@ -1,0 +1,10 @@
+Removed Pin From Net: NetName=GND Pin=U1-0
+Removed Pin From Net: NetName=GND Pin=U1-0
+Removed Pin From Net: NetName=GND Pin=U1-0
+Removed Pin From Net: NetName=GND Pin=U1-0
+Removed Pin From Net: NetName=GND Pin=U2-0
+Removed Pin From Net: NetName=GND Pin=U2-0
+Removed Pin From Net: NetName=GND Pin=U2-0
+Removed Pin From Net: NetName=GND Pin=U2-0
+Added Pin To Net: NetName=GND Pin=FE1-1
+Added Room: Name=USBHUB

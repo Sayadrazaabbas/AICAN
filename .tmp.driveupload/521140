@@ -1,0 +1,45 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 26 21:24:44 2021
+
+@author: Jeneel
+"""
+import RPi.GPIO as GPIO
+from ky040.KY040 import KY040
+from opt import *
+import time
+import json
+
+
+if __name__ == '__main__':
+
+    ky040 = KY040(CLOCKPIN, DATAPIN, SWITCHPIN, rotaryChange, switchPressed, rotaryBouncetime=100, switchBouncetime=220)
+    #ky040 = KY040(CLOCKPIN, DATAPIN, SWITCHPIN, rotaryChange, switchPressed)
+    
+    ky040.start()
+    mylcd.lcd_display_string("Hello World!", 3, 5)
+    power = True
+    restar = 1
+    menuItems =  len(startMenu)
+    menuOption = MainMenu
+    menuSelected = startMenu
+    # welcome()
+    display_home()
+    # os.execv('sudo python3 /home/pi/Py_Menu/restart_hmi.py',  [''])
+    
+    try:
+        while power:
+            #TODO: change while true to variable dependent which is updated in a button callback function
+            # restart = input()
+            # if restar == 0:
+            #     restart()
+            time.sleep(0.1)
+    except KeyboardInterrupt as e:
+        print("Bye Bye ")
+        print(str(e))
+    finally:
+        with open('kernelr.json', 'w') as fp:
+            json.dump(kernelr, fp)
+        lcd_clear()
+        ky040.stop()
+        GPIO.cleanup()

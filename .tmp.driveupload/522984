@@ -1,0 +1,31 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextFunction, Request, Response } from "express";
+
+import { config } from "../config";
+import AppError from "../utils/AppError";
+
+export const notFound = (req: Request, res: Response, next: NextFunction) => {
+  const error = new Error(`Not found - ${req.originalUrl}`);
+  res.status(404);
+  next(error);
+};
+
+export const errorHandler = (
+  err: Error | AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const error =
+    err instanceof AppError
+      ? err
+      : new AppError(res?.statusCode || 500, err?.message);
+  const sc = error?.statusCode || res?.statusCode;
+  const statusCode = sc === 200 ? 500 : sc;
+
+  res.status(statusCode).json({
+    status: statusCode,
+    message: err.message,
+    stack: config.env === "production" ? "" : err.stack,
+  });
+};

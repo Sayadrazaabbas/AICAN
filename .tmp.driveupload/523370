@@ -1,0 +1,28 @@
+import Header from "@/components/Header";
+import DeviceCard from "@/components/homepage/DeviceCard";
+import Container from "@/components/pageLayout/Container";
+import useAxios from "@/hooks/useAxios";
+import { PagianteResponse } from "@/types/default.type";
+import { Device } from "@/types/device.type";
+
+export default function Homepage() {
+  const { response: devicesResponse } = useAxios<PagianteResponse<Device>>({
+    method: "GET",
+    url: `/api/device/query`,
+    params: { page: 1, limit: 20 },
+  });
+
+  const { docs: devices } = devicesResponse?.data || {};
+
+  return (
+    <Container>
+      <Header title="Dashboard" />
+
+      <div className="grid grid-cols-(--devices-grid) gap-3">
+        {devices?.map((device) => (
+          <DeviceCard key={device?._id} device={device} />
+        ))}
+      </div>
+    </Container>
+  );
+}

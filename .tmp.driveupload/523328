@@ -1,0 +1,147 @@
+import { Loader2, Save } from "lucide-react";
+import { ChangeEvent, useContext, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { DeviceData, deviceDataContext } from "@/contexts/DeviceDataContext";
+import useAxios from "@/hooks/useAxios";
+import { DeviceConfig, DeviceConfigRow } from "@/types/device.type";
+import { refetchRequest } from "@/utils/axiosStore";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../ui/table";
+
+interface PropTypes {
+  disabled: boolean;
+  deviceConfig: DeviceConfig;
+  deviceId: string;
+}
+
+export default function EditTableModal({
+  disabled,
+  deviceConfig,
+  deviceId,
+}: PropTypes) {
+  const [configRows, setConfigRows] = useState<DeviceConfigRow[]>(
+    deviceConfig?.rows
+  );
+
+  const { publishToServer } = useContext<DeviceData>(deviceDataContext);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const { request: updateDeviceConfig, loading } = useAxios<
+    Partial<DeviceConfig>
+  >({
+    method: "PUT",
+    url: `/api/device/config/${deviceConfig?._id}`,
+  });
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const [key, idx] = name.split("-");
+
+    setConfigRows((prev) =>
+      prev?.map((row, rIdx) => {
+        if (rIdx === +idx) {
+          return { ...row, [key]: +value };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleSubmit = async () => {
+    const { data } = await updateDeviceConfig({
+      body: { mode: deviceConfig?.mode, rows: configRows },
+    });
+    if (data) {
+      configRows.forEach((row, rIdx) => {
+        publishToServer(`/${deviceId}/B_${rIdx + 1}`, row?.val?.toString());
+        publishToServer(`/${deviceId}/minMV${rIdx + 1}`, row?.val?.toString());
+        publishToServer(`/${deviceId}/maxMV${rIdx + 1}`, row?.val?.toString());
+      });
+      toast.success("Config updated.");
+      triggerRef.current?.click();
+      refetchRequest(["device-id"]);
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger ref={triggerRef} asChild disabled={disabled}>
+        <Button>Edit Table</Button>
+      </DialogTrigger>
+      <DialogContent className="min-w-[95%]">
+        <DialogHeader>
+          <DialogTitle>Edit Table</DialogTitle>
+          <DialogDescription>Edit table data here.</DialogDescription>
+        </DialogHeader>
+        <Table className="mt-3">
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>Buffer</TableHead>
+              <TableHead>Min mV</TableHead>
+              <TableHead>Max mV</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {configRows?.map((row, rIdx) => (
+              <TableRow key={row?._id}>
+                <TableCell>{rIdx + 1}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={configRows[rIdx]?.val || 0}
+                    onChange={handleInputChange}
+                    name={`val-${rIdx}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={configRows[rIdx]?.minMv || 0}
+                    onChange={handleInputChange}
+                    name={`minMv-${rIdx}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={configRows[rIdx]?.maxMv || 0}
+                    onChange={handleInputChange}
+                    name={`maxMv-${rIdx}`}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <DialogFooter>
+          <Button type="button" onClick={handleSubmit} disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : <Save />}
+            Save changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

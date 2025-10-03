@@ -1,0 +1,160 @@
+Added Component: Designator=C1(Cap_47uF/16V)
+Added Component: Designator=C2(Cap_47uF/16V)
+Added Component: Designator=C3(2012[0805]-C)
+Added Component: Designator=C4(2012[0805]-C)
+Added Component: Designator=C5(2012[0805]-C)
+Added Component: Designator=C6(Cap_47uF/16V)
+Added Component: Designator=C7(2012[0805]-C)
+Added Component: Designator=C8(2012[0805]-C)
+Added Component: Designator=C9(2012[0805]-C)
+Added Component: Designator=C10(2012[0805]-C)
+Added Component: Designator=D1(LED1)
+Added Component: Designator=D2(LED1)
+Added Component: Designator=D3(LED1)
+Added Component: Designator=D4(LED1)
+Added Component: Designator=D5(LED1)
+Added Component: Designator=FE1.1s(SSOP-28)
+Added Component: Designator=R1(2012[0805]-R)
+Added Component: Designator=R2(2012[0805]-R)
+Added Component: Designator=R3(2012[0805]-R)
+Added Component: Designator=R4(2012[0805]-R)
+Added Component: Designator=R5(2012[0805]-R)
+Added Component: Designator=R6(2012[0805]-R)
+Added Component: Designator=R7(2012[0805]-R)
+Added Component: Designator=R8(2012[0805]-R)
+Added Component: Designator=U1(Micro-USB)
+Added Component: Designator=U2(Micro-USB)
+Added Component: Designator=USB1(USB2.5-2V4A)
+Added Component: Designator=USB2(USB2.5-2V4A)
+Added Component: Designator=USB3(USB2.5-2V4A)
+Added Component: Designator=USB4(USB2.5-2V4A)
+Added Component: Designator=X1(XTAL)
+Added Pin To Net: NetName=GND Pin=C1-2
+Added Pin To Net: NetName=GND Pin=C2-2
+Added Pin To Net: NetName=GND Pin=C3-1
+Added Pin To Net: NetName=GND Pin=C4-1
+Added Pin To Net: NetName=GND Pin=C5-1
+Added Pin To Net: NetName=GND Pin=C6-1
+Added Pin To Net: NetName=GND Pin=C7-2
+Added Pin To Net: NetName=GND Pin=C8-1
+Added Pin To Net: NetName=GND Pin=C9-1
+Added Pin To Net: NetName=GND Pin=C10-1
+Added Pin To Net: NetName=GND Pin=R1-1
+Added Pin To Net: NetName=GND Pin=R4-1
+Added Pin To Net: NetName=GND Pin=R6-1
+Added Pin To Net: NetName=GND Pin=U1-4
+Added Pin To Net: NetName=GND Pin=U1-5
+Added Pin To Net: NetName=GND Pin=U2-4
+Added Pin To Net: NetName=GND Pin=U2-5
+Added Pin To Net: NetName=GND Pin=USB1-4
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-6
+Added Pin To Net: NetName=GND Pin=USB2-4
+Added Pin To Net: NetName=GND Pin=USB2-5
+Added Pin To Net: NetName=GND Pin=USB2-6
+Added Pin To Net: NetName=GND Pin=USB3-4
+Added Pin To Net: NetName=GND Pin=USB3-5
+Added Pin To Net: NetName=GND Pin=USB3-6
+Added Pin To Net: NetName=GND Pin=USB4-4
+Added Pin To Net: NetName=GND Pin=USB4-5
+Added Pin To Net: NetName=GND Pin=USB4-6
+Added Net: Name=GND
+Added Pin To Net: NetName=NetD1_1 Pin=D1-1
+Added Pin To Net: NetName=NetD1_1 Pin=D2-1
+Added Pin To Net: NetName=NetD1_1 Pin=D3-2
+Added Pin To Net: NetName=NetD1_1 Pin=D4-1
+Added Pin To Net: NetName=NetD1_1 Pin=D5-2
+Added Pin To Net: NetName=NetD1_1 Pin=FE1.1s-22
+Added Net: Name=NetD1_1
+Added Pin To Net: NetName=NetD1_2 Pin=D1-2
+Added Pin To Net: NetName=NetD1_2 Pin=R6-2
+Added Net: Name=NetD1_2
+Added Pin To Net: NetName=NetD2_2 Pin=D2-2
+Added Pin To Net: NetName=NetD2_2 Pin=D3-1
+Added Pin To Net: NetName=NetD2_2 Pin=R7-2
+Added Net: Name=NetD2_2
+Added Pin To Net: NetName=NetD4_2 Pin=D4-2
+Added Pin To Net: NetName=NetD4_2 Pin=D5-1
+Added Pin To Net: NetName=NetD4_2 Pin=R8-2
+Added Net: Name=NetD4_2
+Added Pin To Net: NetName=NetFE1.1s_4 Pin=FE1.1s-4
+Added Pin To Net: NetName=NetFE1.1s_4 Pin=USB1-2
+Added Net: Name=NetFE1.1s_4
+Added Pin To Net: NetName=NetFE1.1s_5 Pin=FE1.1s-5
+Added Pin To Net: NetName=NetFE1.1s_5 Pin=USB1-3
+Added Net: Name=NetFE1.1s_5
+Added Pin To Net: NetName=NetFE1.1s_6 Pin=FE1.1s-6
+Added Pin To Net: NetName=NetFE1.1s_6 Pin=USB2-2
+Added Net: Name=NetFE1.1s_6
+Added Pin To Net: NetName=NetFE1.1s_7 Pin=FE1.1s-7
+Added Pin To Net: NetName=NetFE1.1s_7 Pin=USB2-3
+Added Net: Name=NetFE1.1s_7
+Added Pin To Net: NetName=NetFE1.1s_8 Pin=FE1.1s-8
+Added Pin To Net: NetName=NetFE1.1s_8 Pin=USB3-2
+Added Net: Name=NetFE1.1s_8
+Added Pin To Net: NetName=NetFE1.1s_9 Pin=FE1.1s-9
+Added Pin To Net: NetName=NetFE1.1s_9 Pin=USB3-3
+Added Net: Name=NetFE1.1s_9
+Added Pin To Net: NetName=NetFE1.1s_10 Pin=FE1.1s-10
+Added Pin To Net: NetName=NetFE1.1s_10 Pin=USB4-2
+Added Net: Name=NetFE1.1s_10
+Added Pin To Net: NetName=NetFE1.1s_11 Pin=FE1.1s-11
+Added Pin To Net: NetName=NetFE1.1s_11 Pin=USB4-3
+Added Net: Name=NetFE1.1s_11
+Added Pin To Net: NetName=NetFE1.1s_14 Pin=FE1.1s-14
+Added Pin To Net: NetName=NetFE1.1s_14 Pin=R1-2
+Added Net: Name=NetFE1.1s_14
+Added Pin To Net: NetName=NetFE1.1s_15 Pin=FE1.1s-15
+Added Pin To Net: NetName=NetFE1.1s_15 Pin=U1-2
+Added Pin To Net: NetName=NetFE1.1s_15 Pin=U2-2
+Added Net: Name=NetFE1.1s_15
+Added Pin To Net: NetName=NetFE1.1s_16 Pin=FE1.1s-16
+Added Pin To Net: NetName=NetFE1.1s_16 Pin=U1-3
+Added Pin To Net: NetName=NetFE1.1s_16 Pin=U2-3
+Added Net: Name=NetFE1.1s_16
+Added Pin To Net: NetName=NetFE1.1s_17 Pin=FE1.1s-17
+Added Pin To Net: NetName=NetFE1.1s_17 Pin=R3-1
+Added Net: Name=NetFE1.1s_17
+Added Pin To Net: NetName=NetFE1.1s_18 Pin=FE1.1s-18
+Added Pin To Net: NetName=NetFE1.1s_18 Pin=R4-2
+Added Pin To Net: NetName=NetFE1.1s_18 Pin=R5-1
+Added Net: Name=NetFE1.1s_18
+Added Pin To Net: NetName=NetFE1.1s_19 Pin=FE1.1s-19
+Added Pin To Net: NetName=NetFE1.1s_19 Pin=R2-1
+Added Net: Name=NetFE1.1s_19
+Added Pin To Net: NetName=NetFE1.1s_23 Pin=FE1.1s-23
+Added Pin To Net: NetName=NetFE1.1s_23 Pin=R8-1
+Added Net: Name=NetFE1.1s_23
+Added Pin To Net: NetName=NetFE1.1s_24 Pin=FE1.1s-24
+Added Pin To Net: NetName=NetFE1.1s_24 Pin=R7-1
+Added Net: Name=NetFE1.1s_24
+Added Pin To Net: NetName=VCC1_8 Pin=C3-2
+Added Pin To Net: NetName=VCC1_8 Pin=C7-1
+Added Pin To Net: NetName=VCC1_8 Pin=FE1.1s-12
+Added Pin To Net: NetName=VCC1_8 Pin=FE1.1s-28
+Added Net: Name=VCC1_8
+Added Pin To Net: NetName=VCC3_3 Pin=C4-2
+Added Pin To Net: NetName=VCC3_3 Pin=C10-2
+Added Pin To Net: NetName=VCC3_3 Pin=FE1.1s-13
+Added Pin To Net: NetName=VCC3_3 Pin=FE1.1s-21
+Added Pin To Net: NetName=VCC3_3 Pin=FE1.1s-26
+Added Pin To Net: NetName=VCC3_3 Pin=R2-2
+Added Pin To Net: NetName=VCC3_3 Pin=R3-2
+Added Net: Name=VCC3_3
+Added Pin To Net: NetName=VCC5 Pin=C1-1
+Added Pin To Net: NetName=VCC5 Pin=C2-1
+Added Pin To Net: NetName=VCC5 Pin=C5-2
+Added Pin To Net: NetName=VCC5 Pin=C6-2
+Added Pin To Net: NetName=VCC5 Pin=C8-2
+Added Pin To Net: NetName=VCC5 Pin=C9-2
+Added Pin To Net: NetName=VCC5 Pin=FE1.1s-20
+Added Pin To Net: NetName=VCC5 Pin=R5-2
+Added Pin To Net: NetName=VCC5 Pin=U1-1
+Added Pin To Net: NetName=VCC5 Pin=U2-1
+Added Pin To Net: NetName=VCC5 Pin=USB1-1
+Added Pin To Net: NetName=VCC5 Pin=USB2-1
+Added Pin To Net: NetName=VCC5 Pin=USB3-1
+Added Pin To Net: NetName=VCC5 Pin=USB4-1
+Added Net: Name=VCC5
+Added Class: Name=USBHUB
+Added Room: Name=USBHUB

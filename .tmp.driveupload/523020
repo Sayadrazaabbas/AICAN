@@ -1,0 +1,15 @@
+import os from "os";
+
+const getServerIP = () => {
+  const interfaces = os.networkInterfaces();
+
+  const allAddrs = Object.values(interfaces)
+    .filter((iface): iface is os.NetworkInterfaceInfo[] => !!iface)
+    .flat();
+
+  const addr = allAddrs.find((a) => a.family === "IPv4" && !a.internal);
+
+  return addr ? addr.address : null;
+};
+
+export default getServerIP;

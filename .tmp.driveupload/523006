@@ -1,0 +1,39 @@
+import mongoose from "mongoose";
+
+import models from "../constanst/model.constant";
+import { IDeviceConfigDocument } from "../types/device.type";
+
+const DeviceConfigSchema = new mongoose.Schema<IDeviceConfigDocument>(
+  {
+    mode: { type: String, required: true },
+    probe: { type: String },
+    deviceId: { type: mongoose.Schema.Types.ObjectId, ref: models.device },
+    rows: {
+      type: [
+        {
+          val: { type: Number, required: true },
+          valAfterCal: { type: Number },
+          slope: { type: Number },
+          temp: { type: Number },
+          mv: { type: Number },
+          minMv: { type: Number },
+          maxMv: { type: Number },
+          time: { type: Date },
+        },
+      ],
+      required: true,
+    },
+    alarm: {
+      minPh: { type: Number },
+      maxPh: { type: Number },
+    },
+  },
+  { timestamps: true }
+);
+
+const DeviceConfig = mongoose.model<IDeviceConfigDocument>(
+  models.deviceConfig,
+  DeviceConfigSchema
+);
+
+export default DeviceConfig;

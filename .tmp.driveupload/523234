@@ -1,0 +1,37 @@
+import { DeviceConfig } from "@/types/device.type";
+
+export const PAGINATION_LIMIT = 25;
+
+export const PH_CONFIG_5: DeviceConfig = {
+  mode: "5",
+  rows: [
+    { val: 1.68 },
+    { val: 4.01 },
+    { val: 7.01 },
+    { val: 10.01 },
+    { val: 12.45 },
+  ],
+};
+
+export const PH_CONFIG_3: DeviceConfig = {
+  mode: "3",
+  rows: [{ val: 1.68 }, { val: 7.01 }, { val: 12.45 }],
+};
+
+export const EC_CONFIG_3: DeviceConfig = {
+  mode: "3",
+  rows: [{ val: 512.0 }, { val: 1418.0 }, { val: 1833.0 }],
+  probe: "0.1k",
+};
+
+export const EC_CONFIG_2: DeviceConfig = {
+  mode: "2",
+  rows: [{ val: 512.0 }, { val: 1833.0 }],
+  probe: "0.1k",
+};
+
+export const EC_CONFIG_1: DeviceConfig = {
+  mode: "1",
+  rows: [{ val: 1418.0 }],
+  probe: "0.1k",
+};

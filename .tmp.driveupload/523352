@@ -1,0 +1,51 @@
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
+import { Logs } from "../log/LogModeComp";
+
+export default function LogsGraph() {
+  const logs: Logs[] = sessionStorage?.getItem("logs")
+    ? JSON.parse(sessionStorage?.getItem("logs") || "")
+    : [];
+
+  const chartData = logs?.map((log) => ({
+    time: new Date(log?.time).toLocaleTimeString(),
+    ph: log?.val,
+    temp: log?.temp,
+  }));
+
+  return (
+    <div className="mx-auto mt-8 w-full sm:w-3/5">
+      <ChartContainer config={{}}>
+        <LineChart accessibilityLayer data={chartData}>
+          <CartesianGrid vertical={false} />
+          <YAxis />
+          <XAxis dataKey="time" axisLine={false} tickMargin={8} />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel />}
+          />
+          <Line
+            dataKey="ph"
+            type="natural"
+            stroke="var(--chart-2)"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            dataKey="temp"
+            type="natural"
+            stroke="var(--chart-1)"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ChartContainer>
+    </div>
+  );
+}

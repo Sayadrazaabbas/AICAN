@@ -1,0 +1,36 @@
+import { EllipsisVertical } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+
+type PropsType = Record<string, () => void>;
+
+export default function TableDropdown(props: PropsType) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="hover:cursor-pointer">
+        <EllipsisVertical className="h-5 w-5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="-translate-x-[45%]">
+        {Object.entries(props)?.map(([key, func]) => {
+          if (!key?.startsWith("on")) return null;
+          return (
+            <DropdownMenuItem key={key} className="p-0">
+              <button
+                type="button"
+                className="w-full px-2 py-1.5 text-start hover:cursor-pointer"
+                onClick={func}
+              >
+                {key?.replace("on", "")}
+              </button>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

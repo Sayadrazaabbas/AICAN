@@ -1,0 +1,69 @@
+{
+  "name": "iot-lab-backend",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/AICAN-SD/iot-lab-backend#readme",
+  "bugs": {
+    "url": "https://github.com/AICAN-SD/iot-lab-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AICAN-SD/iot-lab-backend.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node ./dist/index",
+    "dev": "nodemon --exec ts-node ./src/index.ts",
+    "build": "tsup",
+    "pretty": "prettier --write \"**/*.{js,jsx,ts,tsx,json}\"",
+    "lint": "eslint . --ext ts,js --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint --fix .",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.10.2",
+    "mongoose-paginate-v2": "^1.9.0",
+    "morgan": "^1.10.0",
+    "mqtt": "^5.14.1",
+    "socket.io": "^4.8.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@types/compression": "^1.7.5",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.13.5",
+    "@types/winston": "^2.4.4",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.4.4"
+  }
+}

@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "C:/Users/DELL/Downloads/ESP32-S3-Touch-LCD-2.8-Demo/ESP-IDF/ESP32-S3-Touch-LCD-2.8-Test"
+		},
+		{
+			"name": "250925-163717-4d_systems_esp32s3_gen4_r8n16",
+			"path": "C:/Users/DELL/Documents/PlatformIO/Projects/250925-163717-4d_systems_esp32s3_gen4_r8n16"
+		},
+		{
+			"name": "250925-163826-4d_systems_esp32s3_gen4_r8n16",
+			"path": "C:/Users/DELL/Documents/PlatformIO/Projects/250925-163826-4d_systems_esp32s3_gen4_r8n16"
+		}
+	],
+	"settings": {}
+}

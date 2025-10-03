@@ -1,0 +1,79 @@
+import { ChangeEvent, FormEventHandler, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import useAxios from "@/hooks/useAxios";
+import { Device, DeviceConfig } from "@/types/device.type";
+import { refetchRequest } from "@/utils/axiosStore";
+
+interface PropTypes {
+  deviceData: Device<DeviceConfig>;
+}
+
+const DEFAULT_ALARM = {
+  minPh: 0,
+  maxPh: 0,
+};
+
+export default function AlarmSetup({ deviceData }: PropTypes) {
+  const [alarm, setAlarm] = useState(
+    deviceData?.deviceConfigId?.alarm || DEFAULT_ALARM
+  );
+  const { request: updateDeviceConfig } = useAxios<Partial<DeviceConfig>>({
+    method: "PUT",
+    url: `/api/device/config/${deviceData?.deviceConfigId?._id}`,
+  });
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setAlarm((prev) => ({ ...prev, [name]: +value }));
+  };
+
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+    const res = await updateDeviceConfig({ body: { alarm } });
+    if (res.data) {
+      refetchRequest(["device-id"]);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mx-auto mt-8 flex w-full items-end gap-3 lg:w-3/5"
+    >
+      <div className="w-full">
+        <Label htmlFor="minPh">Min PH</Label>
+        <Input
+          type="number"
+          value={alarm?.minPh}
+          name="minPh"
+          id="minPh"
+          onChange={handleInputChange}
+          min={0}
+          max={alarm?.maxPh || 14}
+        />
+      </div>
+      <div className="w-full">
+        <Label htmlFor="maxPh">Max PH</Label>
+        <Input
+          type="number"
+          value={alarm?.maxPh}
+          name="maxPh"
+          id="maxPh"
+          onChange={handleInputChange}
+          min={alarm?.minPh || 0}
+          max={14}
+        />
+      </div>
+      <div className="flex w-full gap-5">
+        <Button type="submit">Save</Button>
+        <Button type="button" variant="destructive">
+          Reset
+        </Button>
+      </div>
+    </form>
+  );
+}

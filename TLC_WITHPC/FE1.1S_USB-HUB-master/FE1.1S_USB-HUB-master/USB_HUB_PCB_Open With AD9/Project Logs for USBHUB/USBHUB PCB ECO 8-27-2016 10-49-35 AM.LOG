@@ -1,0 +1,59 @@
+Removed Pin From Net: NetName=VCC5 Pin=C1-1
+Removed Pin From Net: NetName=GND Pin=C1-2
+Change Component Designator: OldDesignator=C2 NewDesignator=C9
+Change Component Designator: OldDesignator=C3 NewDesignator=C10
+Change Component Designator: OldDesignator=C4 NewDesignator=C11
+Change Component Designator: OldDesignator=C5 NewDesignator=C12
+Change Component Designator: OldDesignator=C6 NewDesignator=C13
+Change Component Designator: OldDesignator=C7 NewDesignator=C14
+Change Component Designator: OldDesignator=C8 NewDesignator=C15
+Change Component Designator: OldDesignator=C9 NewDesignator=C16
+Change Component Designator: OldDesignator=C10 NewDesignator=C17
+Change Component Designator: OldDesignator=FE1.1s NewDesignator=FE1
+Added Component: Designator=C2(cap_220uF/16V)
+Added Component: Designator=C3(cap_220uF/16V)
+Added Component: Designator=C4(cap_220uF/16V)
+Added Component: Designator=C5(0603)
+Added Component: Designator=C6(0603)
+Added Component: Designator=C7(0603)
+Added Component: Designator=C8(0603)
+Added Pin To Net: NetName=GND Pin=C1-1
+Added Pin To Net: NetName=VCC5 Pin=C1-2
+Added Pin To Net: NetName=GND Pin=C2-1
+Added Pin To Net: NetName=VCC5 Pin=C2-2
+Added Pin To Net: NetName=GND Pin=C3-1
+Added Pin To Net: NetName=VCC5 Pin=C3-2
+Added Pin To Net: NetName=GND Pin=C4-1
+Added Pin To Net: NetName=VCC5 Pin=C4-2
+Added Pin To Net: NetName=GND Pin=C5-1
+Added Pin To Net: NetName=VCC5 Pin=C5-2
+Added Pin To Net: NetName=GND Pin=C6-1
+Added Pin To Net: NetName=VCC5 Pin=C6-2
+Added Pin To Net: NetName=GND Pin=C7-1
+Added Pin To Net: NetName=VCC5 Pin=C7-2
+Added Pin To Net: NetName=GND Pin=C8-1
+Added Pin To Net: NetName=VCC5 Pin=C8-2
+Change Net Name : Old Net Name=NetFE1.1s_4 New Net Name=NetFE1_4
+Change Net Name : Old Net Name=NetFE1.1s_5 New Net Name=NetFE1_5
+Change Net Name : Old Net Name=NetFE1.1s_6 New Net Name=NetFE1_6
+Change Net Name : Old Net Name=NetFE1.1s_7 New Net Name=NetFE1_7
+Change Net Name : Old Net Name=NetFE1.1s_8 New Net Name=NetFE1_8
+Change Net Name : Old Net Name=NetFE1.1s_9 New Net Name=NetFE1_9
+Change Net Name : Old Net Name=NetFE1.1s_10 New Net Name=NetFE1_10
+Change Net Name : Old Net Name=NetFE1.1s_11 New Net Name=NetFE1_11
+Change Net Name : Old Net Name=NetFE1.1s_14 New Net Name=NetFE1_14
+Change Net Name : Old Net Name=NetFE1.1s_15 New Net Name=NetFE1_15
+Change Net Name : Old Net Name=NetFE1.1s_16 New Net Name=NetFE1_16
+Change Net Name : Old Net Name=NetFE1.1s_17 New Net Name=NetFE1_17
+Change Net Name : Old Net Name=NetFE1.1s_18 New Net Name=NetFE1_18
+Change Net Name : Old Net Name=NetFE1.1s_19 New Net Name=NetFE1_19
+Change Net Name : Old Net Name=NetFE1.1s_23 New Net Name=NetFE1_23
+Change Net Name : Old Net Name=NetFE1.1s_24 New Net Name=NetFE1_24
+Added Member To Class: ClassName=USBHUB Member=Component C11 Cap1
+Added Member To Class: ClassName=USBHUB Member=Component C12 Cap1
+Added Member To Class: ClassName=USBHUB Member=Component C13 Cap_Pol
+Added Member To Class: ClassName=USBHUB Member=Component C14 Cap1
+Added Member To Class: ClassName=USBHUB Member=Component C15 Cap1
+Added Member To Class: ClassName=USBHUB Member=Component C16 Cap1
+Added Member To Class: ClassName=USBHUB Member=Component C17 Cap1
+Added Room: Name=USBHUB

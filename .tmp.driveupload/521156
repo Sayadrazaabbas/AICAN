@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "mqtt_PH_Code",
+			"path": "C:/Users/DELL/Documents/PlatformIO/Projects/mqtt_PH_Code"
+		},
+		{
+			"name": "250820-033945-esp32dev",
+			"path": "../PH_Meter_Black/250820-033945-esp32dev/250820-033945-esp32dev"
+		},
+		{
+			"name": "ESPIDF_TEST_DRONE",
+			"path": "C:/Users/DELL/Documents/PlatformIO/Projects/ESPIDF_TEST_DRONE"
+		}
+	],
+	"settings": {}
+}

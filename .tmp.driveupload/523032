@@ -1,0 +1,136 @@
+import jwt from "jsonwebtoken";
+import { PaginateOptions } from "mongoose";
+
+import { config } from "../config";
+import { generateAccessToken, generateRefreshToken } from "../config/jwt";
+import { User } from "../models";
+import { IUserDocument, UserType } from "../types/user.type";
+import AppError from "../utils/AppError";
+
+const canMutate = (targetRole: string, currentRole: string): boolean => {
+  if (currentRole === "user") {
+    return false;
+  }
+  if (currentRole === "admin" && targetRole === "superuser") {
+    return false;
+  }
+
+  return true;
+};
+
+export const registerUser = async (
+  body: UserType & { verificationKey?: string }
+) => {
+  const exists = await User.findOne({ email: body.email });
+  if (exists) {
+    throw new AppError(409, "Email already registered");
+  }
+
+  if (body?.role === "superuser") {
+    const superuserExists = await User.findOne({ role: "superuser" });
+    if (superuserExists) {
+      throw new AppError(403, "Superuser already exists");
+    }
+  }
+
+  const user = new User(body);
+  const saved = await user.save();
+  if (!saved) {
+    throw new AppError(400, "Failed to create user");
+  }
+  return { userId: saved?._id, message: "User registered successfully" };
+};
+
+export const loginUser = async (body: UserType) => {
+  const user = await User.findOne({ email: body.email }).select(
+    "_id email name password"
+  );
+  if (!user) {
+    throw new AppError(404, "Account not registered or deleted");
+  }
+  const isCorrect = await user.comparePassword(body?.password);
+
+  if (!isCorrect) {
+    throw new AppError(400, "Invalid email or password");
+  }
+
+  const accessToken = generateAccessToken(user?._id?.toString());
+  const refreshToken = generateRefreshToken(user?._id?.toString());
+
+  return {
+    user: { name: user?.name, email: user?.email, _id: user?._id },
+    accessToken,
+    refreshToken,
+  };
+};
+
+export const refreshUserToken = async (cookieToken: string) => {
+  const payload = jwt.verify(cookieToken, config.jwtRefreshSecret);
+  let accessToken = "";
+  if (typeof payload !== "string") {
+    if (payload?.userId) {
+      const user = await User.findById(payload?.userId);
+      if (!user) throw new AppError(404, "User not found or deleted");
+
+      accessToken = generateAccessToken(user?._id.toString());
+    }
+  }
+
+  return accessToken;
+};
+
+export const getUserProfile = async (id: string) => {
+  const user = await User.findById(id);
+  if (!user) throw new AppError(404, "User not found or deleted");
+  return user;
+};
+
+export const updateUser = async (
+  id: string,
+  body: UserType,
+  reqUser?: IUserDocument
+) => {
+  const user = await User.findById(id);
+  if (!user) throw new AppError(404, "User not found or deleted");
+
+  if (!canMutate(user?.role, reqUser?.role || "user")) {
+    throw new AppError(403, `You donot have access to edit ${user?.role}`);
+  }
+
+  if (body?.name) user.name = body?.name;
+  if (body?.email) user.email = body?.email;
+  if (body?.role) user.role = body?.role;
+  if (body?.password) user.password = body?.password;
+
+  const updated = await user.save();
+  if (!updated) throw new AppError(400, "Failed to update user");
+
+  return updated;
+};
+
+export const deleteUser = async (id: string, reqUser?: IUserDocument) => {
+  const user = await User.findById(id);
+  if (!user) throw new AppError(404, "User not found or deleted");
+
+  if (!canMutate(user?.role, reqUser?.role || "user")) {
+    throw new AppError(403, `You donot have access to delete ${user?.role}`);
+  }
+
+  const deleted = await User.findByIdAndDelete(id);
+  if (!deleted) throw new AppError(400, "Failed to delete user");
+
+  return deleted;
+};
+
+export const getSuperuser = async () => {
+  const user = await User.findOne({ role: "superuser" });
+  return user;
+};
+
+export const queryUsers = async (
+  filter: Record<string, unknown>,
+  options: PaginateOptions
+) => {
+  const users = await User.paginate(filter, options);
+  return users;
+};

@@ -1,0 +1,81 @@
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Device, DeviceConfig } from "@/types/device.type";
+
+import LogModeComp, { Logs } from "./LogModeComp";
+import ProductDetails from "./ProductDetails";
+
+interface PropTypes {
+  deviceData: Device<DeviceConfig>;
+  disabled: boolean;
+  setDisableTabs: Dispatch<SetStateAction<boolean>>;
+}
+
+export default function LogTable({
+  deviceData,
+  disabled,
+  setDisableTabs,
+}: PropTypes) {
+  const [logMode, setLogMode] = useState<string>("");
+  const [logs, setLogs] = useState<Logs[]>(
+    sessionStorage.getItem("logs")
+      ? JSON.parse(sessionStorage.getItem("logs") || "")
+      : []
+  );
+  const isEc = deviceData?.type === "ec";
+
+  useEffect(() => {
+    return () => {
+      sessionStorage.setItem("logs", JSON.stringify(logs));
+    };
+  }, [logs]);
+
+  return (
+    <div>
+      <ProductDetails disabled={disabled} />
+      <LogModeComp
+        logMode={logMode}
+        setLogMode={setLogMode}
+        setLogs={setLogs}
+        setDisableTabs={setDisableTabs}
+      />
+      <Table className="mt-3">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date Time</TableHead>
+            <TableHead>{isEc ? "EC" : "Ph"}</TableHead>
+            <TableHead>Temp</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead>Batch No.</TableHead>
+            <TableHead>AR No.</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {logs
+            .slice()
+            .reverse()
+            .map((log) => (
+              <TableRow key={new Date(log?.time)?.toISOString()}>
+                <TableCell>
+                  {new Date(log.time).toLocaleString("en-ZA", { hour12: true })}
+                </TableCell>
+                <TableCell>{log.val}</TableCell>
+                <TableCell>{log.temp}</TableCell>
+                <TableCell>{log.product}</TableCell>
+                <TableCell>{log.batchNo}</TableCell>
+                <TableCell>{log.arNo}</TableCell>
+              </TableRow>
+            ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

@@ -1,0 +1,32 @@
+import { ReactNode, createContext, useMemo, useState } from "react";
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface StateType {
+  user: User | null;
+  setUser?: (user: User | null) => void; // Function to update the user
+}
+
+const INITIAL_STATE: StateType | null = {
+  user: localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user") || "")
+    : null,
+};
+
+export const AuthStore = createContext<StateType>(INITIAL_STATE);
+
+export default function AuthContext({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(INITIAL_STATE?.user || null);
+
+  const contextValue = useMemo(() => {
+    return { user, setUser };
+  }, [user]);
+
+  return (
+    <AuthStore.Provider value={contextValue}>{children}</AuthStore.Provider>
+  );
+}

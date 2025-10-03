@@ -1,0 +1,235 @@
+import { Play, Square } from "lucide-react";
+import {
+  ChangeEvent,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
+export interface Logs {
+  logMode: string;
+  time: Date;
+  val: number;
+  temp: number;
+  product: string;
+  batchNo: number;
+  arNo: number;
+}
+
+interface PropTypes {
+  logMode: string;
+  setLogMode: Dispatch<SetStateAction<string>>;
+  setLogs: Dispatch<SetStateAction<Logs[]>>;
+  setDisableTabs: Dispatch<SetStateAction<boolean>>;
+}
+
+const LOG_MODES = [
+  {
+    label: "Log on Stable",
+    id: "stable",
+  },
+
+  {
+    label: "Log on Button",
+    id: "button",
+  },
+  {
+    label: "Log at Interval",
+    id: "interval",
+  },
+];
+
+const DEFAULT_LOG_INTERVAL = {
+  hrs: 0,
+  mins: 0,
+  secs: 0,
+  started: false,
+};
+
+function timeToSeconds(time: {
+  hrs: number;
+  mins: number;
+  secs: number;
+}): number {
+  const { hrs, mins, secs } = time;
+  return hrs * 3600 + mins * 60 + secs;
+}
+
+function secondsToTime(totalSecs: number): {
+  hrs: number;
+  mins: number;
+  secs: number;
+} {
+  const hrs = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  return { hrs, mins, secs };
+}
+
+export default function LogModeComp({
+  logMode,
+  setLogMode,
+  setLogs,
+  setDisableTabs,
+}: PropTypes) {
+  const [logInterval, setLogInterval] = useState(DEFAULT_LOG_INTERVAL);
+  const [timer, setTimer] = useState(0);
+
+  const createLog = useCallback(
+    (logMode: string) => {
+      const time = new Date();
+      const productDetails = sessionStorage.getItem("productDetails")
+        ? JSON.parse(sessionStorage.getItem("productDetails") || "")
+        : {};
+      setLogs((prev) => [
+        ...prev,
+        {
+          logMode,
+          time,
+          val: 0,
+          temp: 0,
+          product: productDetails?.product || "",
+          batchNo: productDetails?.batchNo || 0,
+          arNo: productDetails.arNo || 0,
+        },
+      ]);
+    },
+    [setLogs]
+  );
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (
+      logMode === "interval" &&
+      logInterval?.mins > 0 &&
+      logInterval?.started
+    ) {
+      if (timer > 0) {
+        interval = setInterval(() => {
+          setTimer((prev) => prev - 1);
+        }, 1000);
+      } else {
+        setTimer(logInterval?.mins * 60);
+        createLog(logMode);
+      }
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [logMode, timer, logInterval?.mins, logInterval?.started, createLog]);
+
+  const handleLogInterval = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value: val } = e.target;
+    if (val.includes(".")) {
+      toast.error("Cannot have a decimal value");
+      return;
+    }
+    const value = +val;
+    if (name !== "hrs" && value > 59) {
+      toast.error("Value cannot be greater than 59");
+      return;
+    }
+
+    setLogInterval((prev) => ({ ...prev, [name]: value }));
+    setTimer(timeToSeconds({ ...logInterval, [name]: value }));
+  };
+
+  const time = secondsToTime(timer);
+
+  return (
+    <div className="mt-3 flex w-full items-center gap-5">
+      <Button size="sm" className="px-10" onClick={() => createLog("manual")}>
+        Log
+      </Button>
+      {LOG_MODES.map((mode) => (
+        <div
+          key={mode?.id}
+          className="flex items-center justify-between space-x-2"
+        >
+          <Label htmlFor={mode?.id}>{mode?.label}</Label>
+          <Switch
+            id={mode.id}
+            checked={logMode === mode.id}
+            onCheckedChange={(e) => {
+              setTimer(0);
+              setDisableTabs(e);
+              setLogInterval(DEFAULT_LOG_INTERVAL);
+              setLogMode(e ? mode.id : "");
+            }}
+          />
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <Input
+          type="number"
+          disabled={logMode !== "interval"}
+          className="w-16"
+          placeholder="h"
+          name="hrs"
+          value={logInterval?.hrs || ""}
+          onChange={handleLogInterval}
+        />
+        <Input
+          type="number"
+          disabled={logMode !== "interval"}
+          className="w-16"
+          placeholder="m"
+          name="mins"
+          value={logInterval?.mins || ""}
+          onChange={handleLogInterval}
+        />
+        <Input
+          type="number"
+          disabled={logMode !== "interval"}
+          className="w-16"
+          placeholder="s"
+          name="secs"
+          value={logInterval?.secs || ""}
+          onChange={handleLogInterval}
+        />
+        <Button
+          type="button"
+          size="sm"
+          disabled={logMode !== "interval" || !logInterval?.mins}
+          onClick={() =>
+            setLogInterval((prev) => ({
+              ...prev,
+              started: !prev?.started,
+            }))
+          }
+        >
+          {logInterval?.started ? <Square /> : <Play />}
+        </Button>
+      </div>
+      {logInterval?.mins > 0 && (
+        <p>
+          Logging in {time.hrs ? `${time.hrs}h` : ""}{" "}
+          {time.mins ? `${time.mins}m` : ""} {time.secs ? `${time.secs}s` : ""}
+        </p>
+      )}
+      <Button
+        disabled={!!logMode}
+        size="sm"
+        variant="destructive"
+        className="ml-auto"
+        type="button"
+        onClick={() => {
+          setLogs([]);
+          sessionStorage.setItem("logs", JSON.stringify([]));
+          toast.success("Logs cleared");
+        }}
+      >
+        Clear Logs
+      </Button>
+    </div>
+  );
+}

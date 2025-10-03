@@ -1,0 +1,33 @@
+import { Router } from "express";
+
+import deviceRouter from "./device.route";
+import headerAndFooterRouter from "./headerAndFooter.route";
+import mqttSocketRouter from "./mqttSocket.route";
+import userRouter from "./user.route";
+
+const router: Router = Router();
+
+const routes: { path: string; route: Router }[] = [
+  {
+    path: "/user",
+    route: userRouter,
+  },
+  {
+    path: "/device",
+    route: deviceRouter,
+  },
+  {
+    path: "/headerandfooter",
+    route: headerAndFooterRouter,
+  },
+  {
+    path: "/mqttsocket",
+    route: mqttSocketRouter,
+  },
+];
+
+routes?.forEach((route) => {
+  router.use(route.path, route.route);
+});
+
+export default router;

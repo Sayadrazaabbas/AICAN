@@ -1,0 +1,9 @@
+const models = {
+  media: "Media",
+  user: "User",
+  device: "Device",
+  deviceConfig: "DeviceConfig",
+  headerAndFooter: "HeaderAndFooter",
+};
+
+export default models;

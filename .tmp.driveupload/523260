@@ -1,0 +1,90 @@
+import {
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+import { PagianteResponse } from "@/types/default.type";
+
+import Select from "./Select";
+import { Button } from "./ui/button";
+
+interface PropTypes {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: PagianteResponse<any>;
+  onPageChange: (val: number) => void;
+}
+
+export default function Pagination({ data, onPageChange }: PropTypes) {
+  const {
+    totalPages = 0,
+    hasPrevPage,
+    hasNextPage,
+    page,
+    nextPage,
+    prevPage,
+    totalDocs,
+    pagingCounter,
+    limit,
+  } = data;
+
+  const maxPaging = pagingCounter + limit - 1;
+
+  return (
+    <div className="flex w-full items-center justify-between text-xs">
+      <div className="flex items-center">
+        Page:&nbsp;&nbsp;
+        <Select
+          className="text-xs"
+          value={page.toString()}
+          onChange={(val) => onPageChange(+val)}
+          options={[...Array(totalPages)].map((_, i) => ({
+            label: (i + 1).toString(),
+            value: (i + 1).toString(),
+          }))}
+        />
+        &nbsp;of&nbsp;{totalPages}
+      </div>
+      <p className="min-w-fit">
+        Rows:&nbsp;&nbsp;{pagingCounter}&nbsp;-&nbsp;
+        {maxPaging > totalDocs ? totalDocs : maxPaging}&nbsp;of&nbsp;
+        {totalDocs}
+      </p>
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasPrevPage}
+          onClick={() => onPageChange(1)}
+        >
+          <ChevronFirst />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasPrevPage}
+          onClick={() => onPageChange(prevPage || 1)}
+        >
+          <ChevronLeft />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasNextPage}
+          onClick={() => onPageChange(nextPage || 1)}
+        >
+          <ChevronRight />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={!hasNextPage}
+          onClick={() => onPageChange(totalPages)}
+        >
+          <ChevronLast />
+        </Button>
+      </div>
+    </div>
+  );
+}

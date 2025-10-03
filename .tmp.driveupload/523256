@@ -1,0 +1,32 @@
+import { ReactNode } from "react";
+
+import { cn } from "@/lib/utils";
+
+interface PropTypes {
+  title: string;
+  description?: string;
+  className?: string;
+  children?: ReactNode;
+}
+
+export default function Header({
+  title,
+  description,
+  className,
+  children,
+}: PropTypes) {
+  return (
+    <div
+      className={cn(
+        "mb-5 flex w-full items-center justify-between gap-3",
+        className
+      )}
+    >
+      <div>
+        <h2 className="text-2xl font-semibold">{title}</h2>
+        {description && <p className="text-muted-foreground">{description}</p>}
+      </div>
+      {children && <div>{children}</div>}
+    </div>
+  );
+}

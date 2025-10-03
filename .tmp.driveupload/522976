@@ -1,0 +1,28 @@
+import { Router } from "express";
+
+import { userController } from "../controllers";
+import authenticateToken, { ACCESS } from "../middlewares/authenticatToken";
+
+const router: Router = Router();
+
+router.post("/register", userController.registerUser);
+router.post("/login", userController.loginUser);
+router.post(
+  "/logout",
+  authenticateToken(ACCESS.user),
+  userController.logoutUser
+);
+router.get("/refreshtoken", userController.refreshUserToken);
+router.get("/user", userController.getSuperuser);
+router.get("/query", authenticateToken(ACCESS.user), userController.queryUsers);
+router
+  .route("/profile")
+  .get(authenticateToken(ACCESS.user), userController.getUserProfile)
+  .put(authenticateToken(ACCESS.user), userController.updateUser);
+router
+  .route("/:id")
+  .get(authenticateToken(ACCESS.user), userController.getUserProfile)
+  .put(authenticateToken(ACCESS.user), userController.updateUser)
+  .delete(authenticateToken(ACCESS.user), userController.deleteUser);
+
+export default router;

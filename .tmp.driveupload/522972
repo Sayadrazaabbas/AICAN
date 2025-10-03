@@ -1,0 +1,48 @@
+import { Router } from "express";
+
+import { headerAndFooterController } from "../controllers";
+import authenticateToken, { ACCESS } from "../middlewares/authenticatToken";
+
+const router: Router = Router();
+
+router
+  .route("/")
+  .get(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.getHeaderAndFooters
+  )
+  .post(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.createHeaderAndFooter
+  );
+
+router
+  .route("/query")
+  .get(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.queryHeaderAndFooters
+  );
+
+router
+  .route("/select/:id")
+  .put(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.selectHeaderAndFooter
+  );
+
+router
+  .route("/:id")
+  .get(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.getHeaderAndFooterById
+  )
+  .put(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.updateHeaderAndFooter
+  )
+  .delete(
+    authenticateToken(ACCESS.user),
+    headerAndFooterController.deleteHeaderAndFooter
+  );
+
+export default router;

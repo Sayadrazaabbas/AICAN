@@ -1,0 +1,160 @@
+import {
+  ArrowLeftRight,
+  BatteryFull,
+  Circle,
+  Gauge,
+  MoveDownRight,
+  Omega,
+  Ruler,
+  Thermometer,
+  Zap,
+} from "lucide-react";
+import { ReactNode, useContext } from "react";
+
+import { DeviceData, deviceDataContext } from "@/contexts/DeviceDataContext";
+import { Device, DeviceConfig } from "@/types/device.type";
+
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+
+interface PropTypes {
+  seletedTab: string;
+  deviceData: Device<DeviceConfig>;
+}
+interface InfoCardType {
+  type: string;
+  icon: ReactNode;
+  valueKey: string;
+  unit?: string;
+}
+
+const iconClassName = "size-5";
+
+const INFO_CARDS: InfoCardType[] = [
+  {
+    type: "Temperature",
+    icon: <Thermometer className={iconClassName} />,
+    valueKey: "TEMP_VAL",
+    unit: "°C",
+  },
+  {
+    type: "Voltage",
+    icon: <Gauge className={iconClassName} />,
+    valueKey: "MV_VAL",
+    unit: "mV",
+  },
+  {
+    type: "Battery",
+    icon: <BatteryFull className={iconClassName} />,
+    valueKey: "BATTERY",
+    unit: "%",
+  },
+  {
+    type: "Slope",
+    icon: <MoveDownRight className={iconClassName} />,
+    valueKey: "SLOPE",
+    unit: "%",
+  },
+  {
+    type: "Offset",
+    icon: <ArrowLeftRight className={iconClassName} />,
+    valueKey: "OFFSET",
+    unit: "%",
+  },
+];
+
+const EC_CARDS: InfoCardType[] = [
+  { type: "EC", icon: <Zap className={iconClassName} />, valueKey: "" },
+  {
+    type: "Resistivity",
+    icon: <Omega className={iconClassName} />,
+    valueKey: "",
+    unit: "mΩ",
+  },
+  {
+    type: "TDS",
+    icon: <Circle className={iconClassName} />,
+    valueKey: "",
+    unit: "ppm",
+  },
+  {
+    type: "Salinity",
+    icon: <Circle className={iconClassName} />,
+    valueKey: "",
+    unit: "ppm",
+  },
+];
+
+const PH_CARDS: InfoCardType[] = [
+  { type: "PH", icon: <Ruler className={iconClassName} />, valueKey: "PH_VAL" },
+];
+
+function InfoCard({ iCard, value }: { iCard: InfoCardType; value: string }) {
+  return (
+    <Card className="w-32 p-2">
+      <CardContent className="p-1">
+        <div title={iCard.type} className="mb-2 flex items-center gap-1">
+          {iCard?.icon}
+          <p className="truncate text-sm font-medium">{iCard.type}</p>
+        </div>
+        <p className="text-center text-2xl font-medium">
+          {value || "00"}
+          <span className="ml-1 text-base">{iCard?.unit || ""}</span>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function DashboardPanel({ deviceData, seletedTab }: PropTypes) {
+  const { deviceValues } = useContext<DeviceData>(deviceDataContext);
+
+  const deviceId = deviceData?.id || "";
+
+  const isActive = deviceValues?.[`/${deviceId}/STATUS`] === "1";
+
+  return (
+    <Card className="gap-2 p-0 py-2">
+      <CardHeader className="border-b px-8 !py-1">
+        <CardTitle className="flex w-full items-center justify-between">
+          <p className="flex items-center gap-3">
+            {deviceData?.type?.toUpperCase()} Meter: {deviceData?.id}
+            <span
+              className={`aspect-square w-4 rounded-full ${isActive ? "bg-green-500" : "bg-red-500"}`}
+            />
+          </p>
+
+          <Input
+            className="m-0 h-7 w-1/4"
+            placeholder="Extrapolate at"
+            name="extrapolate"
+          />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex justify-evenly gap-3 overflow-x-auto px-8 py-2">
+        {(deviceData?.type === "ph" ? PH_CARDS : EC_CARDS).map((iCard) => (
+          <InfoCard
+            iCard={iCard}
+            key={iCard?.type}
+            value={deviceValues?.[`/${deviceId}/${iCard.valueKey}`] || "00"}
+          />
+        ))}
+
+        {INFO_CARDS.map((iCard) => {
+          if (
+            ["Slope", "Offset"].includes(iCard.type) &&
+            seletedTab !== "Calibrate"
+          )
+            return null;
+          return (
+            <InfoCard
+              iCard={iCard}
+              key={iCard?.type}
+              value={deviceValues?.[`/${deviceId}/${iCard.valueKey}`] || "00"}
+            />
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}

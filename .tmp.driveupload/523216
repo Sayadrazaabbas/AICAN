@@ -1,0 +1,24 @@
+export interface PagianteResponse<T> {
+  docs: T[];
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  limit: number;
+  nextPage: number | null;
+  page: number;
+  pagingCounter: number;
+  prevPage: number | null;
+  totalDocs: number;
+  totalPages: number;
+}
+
+export interface MongoDocument {
+  _id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface Media extends MongoDocument {
+  name: string;
+  data: string;
+  type: string;
+}

@@ -1,0 +1,43 @@
+import { useContext } from "react";
+import { Outlet } from "react-router";
+
+import { AuthStore } from "@/AuthProvider";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+import AppSidebar from "./AppSidebar";
+
+function SidebarTriggerComp() {
+  const { isMobile } = useSidebar();
+
+  if (!isMobile) return null;
+
+  return (
+    <div className="sticky top-0">
+      <SidebarTrigger />
+    </div>
+  );
+}
+
+export default function PageLayout() {
+  const { user } = useContext(AuthStore);
+
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <AppSidebar />
+      <main className="relative h-dvh max-h-dvh w-full overflow-hidden">
+        <section className="h-[95%] w-full">
+          <Outlet />
+        </section>
+        <section className="absolute right-0 bottom-0 flex h-[5%] min-h-7 w-full items-center justify-between border-t px-5 font-semibold">
+          <SidebarTriggerComp />
+
+          <p>{user?.name || "-"}</p>
+        </section>
+      </main>
+    </SidebarProvider>
+  );
+}

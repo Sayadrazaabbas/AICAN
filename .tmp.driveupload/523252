@@ -1,0 +1,207 @@
+import {
+  Cpu,
+  FileClock,
+  Home,
+  LayoutGrid,
+  LogOut,
+  Moon,
+  RefreshCw,
+  Settings,
+  Settings2,
+  Sun,
+  Tablet,
+  User,
+  UserCog,
+} from "lucide-react";
+import { ComponentType, useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
+
+import { AuthStore } from "@/AuthProvider";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import useAxios from "@/hooks/useAxios";
+
+import { Button } from "../ui/button";
+
+type NavType = {
+  name: string;
+  url: string;
+  icon: ComponentType;
+};
+
+const SETTINGS_NAV_LINKS: NavType[] = [
+  { name: "Setup Devices", url: "/settings/devices", icon: Cpu },
+  { name: "Manage Users", url: "/settings/users", icon: UserCog },
+  { name: "Add Tabs", url: "/settings/tabs", icon: Tablet },
+  { name: "Page Setup", url: "/settings/setup", icon: Settings2 },
+];
+
+const NAV_LINKS: NavType[] = [
+  { name: "Dashboard", url: "/", icon: LayoutGrid },
+  { name: "File History", url: "/history", icon: FileClock },
+  { name: "Reset Device", url: "/reset", icon: RefreshCw },
+];
+
+export default function SidebarComp() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  const { user, setUser } = useContext(AuthStore);
+
+  const { request: logoutUser } = useAxios({
+    method: "POST",
+    url: "/api/user/logout",
+  });
+
+  const { open, isMobile } = useSidebar();
+
+  const isSettings = pathname?.startsWith("/settings");
+
+  useEffect(() => {
+    const body = document.getElementsByTagName("body")?.[0];
+    if (body.classList.contains("dark")) {
+      setIsDarkMode(true);
+    } else {
+      setIsDarkMode(false);
+    }
+  }, []);
+
+  const handleTheme = () => {
+    const body = document.getElementsByTagName("body")?.[0];
+    body.classList.toggle("dark");
+    setIsDarkMode((prev) => {
+      localStorage.setItem("isDark", JSON.stringify(!prev));
+      return !prev;
+    });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log(err);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      if (setUser) setUser(null);
+      window.location.href = "/login";
+    }
+  };
+
+  const handleNavigate = () => {
+    navigate(isSettings ? "/" : "/settings/devices");
+  };
+
+  return (
+    <Sidebar className="h-dvh" collapsible="icon">
+      <SidebarHeader className="flex flex-row items-center gap-3">
+        <SidebarTrigger />
+        {(isMobile || open) && <p>IOT&nbsp;Lab</p>}
+      </SidebarHeader>
+      <SidebarContent className="hover:overflow-visible">
+        <SidebarMenu>
+          {(isSettings ? SETTINGS_NAV_LINKS : NAV_LINKS).map((nav) => (
+            <SidebarMenuItem key={nav.name}>
+              <SidebarMenuButton
+                asChild
+                isActive={
+                  nav?.url === "/"
+                    ? pathname === nav?.url
+                    : pathname.startsWith(nav?.url)
+                }
+                className={`mx-auto ${!(open || isMobile) ? "z-10 transition-all hover:my-3 hover:translate-x-2/5 hover:scale-[180%]" : ""}`}
+              >
+                <button
+                  className="hover:cursor-pointer"
+                  type="button"
+                  onClick={() => navigate(nav?.url)}
+                >
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <nav.icon />
+                      </TooltipTrigger>
+                      <TooltipContent side="right">{nav?.name}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span>{nav.name}</span>
+                </button>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <div
+          className={`flex items-center ${open || isMobile ? "gap-3" : "flex-col-reverse gap-1.5"}`}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Avatar className="border border-gray-500">
+                <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleTheme}>
+                {isDarkMode ? <Sun /> : <Moon />}
+                {isDarkMode ? "Light" : "Dark"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <User />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {(isMobile || open) && (
+            <section>
+              <p className="text-sm">{user?.name}</p>
+              <p className="text-xs">{user?.email}</p>
+            </section>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="aspect-square"
+            onClick={handleNavigate}
+          >
+            {isSettings ? (
+              <Home className="scale-150" />
+            ) : (
+              <Settings className="scale-150" />
+            )}
+          </Button>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

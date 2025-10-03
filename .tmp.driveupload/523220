@@ -1,0 +1,40 @@
+import { MongoDocument } from "./default.type";
+
+export interface Device<T = string> extends MongoDocument {
+  id: string;
+  type: string;
+  configuration?: Record<string, unknown>;
+  calibrate?: boolean;
+  log?: boolean;
+  status?: string;
+  lastUpdated?: Date;
+  deviceConfigId?: T;
+}
+
+export interface DeviceConfigRow {
+  _id?: number | string;
+  val: number;
+  valAfterCal?: number;
+  slope?: number;
+  temp?: number;
+  mv?: number;
+  minMv?: number;
+  maxMv?: number;
+  time?: Date;
+}
+
+export interface DeviceConfig<T = string> extends MongoDocument {
+  mode: string;
+  rows: DeviceConfigRow[];
+  probe?: string;
+  deviceId?: T;
+  alarm?: {
+    minPh: number;
+    maxPh: number;
+  };
+}
+
+export interface CalibrateFor {
+  index: number;
+  started: boolean;
+}

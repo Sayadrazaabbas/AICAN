@@ -1,0 +1,59 @@
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { CalibrateFor } from "@/types/device.type";
+
+interface PropTypes {
+  maxIndex: number;
+  setCalibrateFor: Dispatch<SetStateAction<CalibrateFor>>;
+  onComplete: () => void;
+}
+
+const SECONDS = 60;
+
+export default function CalibrationTimer({
+  maxIndex,
+  setCalibrateFor,
+  onComplete,
+}: PropTypes) {
+  const [seconds, setSeconds] = useState(SECONDS);
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    if (seconds === SECONDS) {
+      const root = document.getElementById("root");
+      root?.classList.add("pointer-events-none");
+      const body = document.getElementsByTagName("body");
+      body?.[0]?.classList.add("cursor-not-allowed");
+    }
+
+    if (seconds > 0) {
+      timer = setInterval(() => {
+        setSeconds((prevSeconds) => prevSeconds - 1);
+      }, 1000);
+    } else {
+      const root = document.getElementById("root");
+      root?.classList.remove("pointer-events-none");
+      const body = document.getElementsByTagName("body");
+      body?.[0]?.classList.remove("cursor-not-allowed");
+
+      onComplete();
+      setCalibrateFor((prev) => {
+        const newIndex = prev?.index + 1;
+        if (newIndex > maxIndex) {
+          toast.success("Calibration process complete.");
+        } else {
+          toast.info("Done. Calibrate the next value.");
+        }
+        return { index: newIndex > maxIndex ? 0 : newIndex, started: false };
+      });
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [setCalibrateFor, onComplete, seconds, maxIndex]);
+
+  return (
+    <div className="mt-2 text-center">Calibrating please wait {seconds}s</div>
+  );
+}

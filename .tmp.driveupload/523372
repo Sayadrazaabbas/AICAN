@@ -1,0 +1,109 @@
+import { useNavigate, useSearchParams } from "react-router";
+import { toast } from "sonner";
+
+import Header from "@/components/Header";
+import Pagination from "@/components/Pagination";
+import TableDropdown from "@/components/TableDropdown";
+import CreateUserModal from "@/components/manageUsers/CreateUserModal";
+import Container from "@/components/pageLayout/Container";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import useAxios from "@/hooks/useAxios";
+import { PagianteResponse } from "@/types/default.type";
+import { User } from "@/types/user.type";
+import { PAGINATION_LIMIT } from "@/utils/constants";
+import getPaginationIndex from "@/utils/getPaginationIndex";
+
+export default function ManageUsers() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = +(searchParams?.get("page") || 1);
+  const limit = +(searchParams?.get("limit") || PAGINATION_LIMIT);
+
+  const { response: UsersResponse, request: refetchUsers } = useAxios<
+    PagianteResponse<User>
+  >({
+    method: "GET",
+    url: `/api/user/query`,
+    params: { page, limit },
+    tag: "users",
+  });
+
+  const { docs: users } = UsersResponse?.data || {};
+
+  const { request: deleteUser } = useAxios<User>({
+    method: "DELETE",
+    url: `/api/user`,
+  });
+
+  const handleSearchParam = (key: string, val: string | number) => {
+    setSearchParams((prev) => {
+      prev.set(key, val.toString());
+      return prev;
+    });
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      const { data } = await deleteUser({ id });
+      if (data) {
+        refetchUsers();
+        toast.success("User Deleted");
+      }
+    }
+  };
+
+  return (
+    <Container className="overflow-y-auto">
+      <Header title="Manage Users">
+        <CreateUserModal />
+      </Header>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-secondary">
+            <TableHead>#</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users?.map((user, uIdx) => (
+            <TableRow key={user?._id}>
+              <TableCell>{getPaginationIndex(page, limit, uIdx)}</TableCell>
+              <TableCell>{user?.name}</TableCell>
+              <TableCell>{user?.email}</TableCell>
+              <TableCell>{user?.role}</TableCell>
+              <TableCell>
+                <TableDropdown
+                  onEdit={() => {
+                    if (user?._id) navigate(user?._id);
+                  }}
+                  onDelete={() => {
+                    if (user?._id) {
+                      handleDelete(user?._id, user?.name);
+                    }
+                  }}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {UsersResponse?.data && (
+        <Pagination
+          data={UsersResponse?.data}
+          onPageChange={(e) => handleSearchParam("page", e)}
+        />
+      )}
+    </Container>
+  );
+}

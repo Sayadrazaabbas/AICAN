@@ -1,0 +1,114 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { AxiosError, AxiosResponse, Method } from "axios";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import axiosInstance from "@/utils/axiosInstance";
+import { registerRequest, unregiseterRequest } from "@/utils/axiosStore";
+
+interface BaseBody {}
+
+type ParamsType = {
+  page?: number | null;
+  limit?: number | null;
+} & Record<string, string | boolean | number>;
+
+interface AxiosHook<T = null, K = T & BaseBody> {
+  url: string;
+  method: Method;
+  body?: K;
+  params?: ParamsType;
+  lazy?: boolean;
+  skip?: boolean;
+  errorToast?: boolean;
+  tag?: string;
+}
+
+interface AxiosHookReturn<T = null, K = T & BaseBody> {
+  loading: boolean;
+  error: AxiosError | null; // State error is of type AxiosError or null
+  response: AxiosResponse<T> | null;
+  request: (args?: {
+    body?: K | null;
+    params?: ParamsType | null;
+    id?: string | null;
+  }) => Promise<AxiosResponse<T>>;
+}
+
+function useAxios<T, K = T & BaseBody>({
+  url,
+  method = "get",
+  params: propParams,
+  body: propBody,
+  lazy = false,
+  skip = false,
+  errorToast = true,
+  tag,
+}: AxiosHook<T, K>): AxiosHookReturn<T, K> {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<AxiosError | null>(null);
+  const [response, setRespose] = useState<AxiosResponse | null>(null);
+
+  const fetchData = useCallback(
+    async ({
+      body,
+      params,
+      id,
+    }: {
+      body?: K | null;
+      params?: ParamsType | null;
+      id?: string | null;
+    } = {}): Promise<AxiosResponse<T>> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await axiosInstance({
+          method,
+          url: id ? `${url}/${id}` : url,
+          params: params || propParams,
+          data: body || propBody,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        setRespose(res);
+        return res;
+      } catch (err) {
+        if (err instanceof AxiosError) {
+          setError(err);
+          const message =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Something went wrong";
+
+          if (errorToast) toast.error(message, { id: message });
+        }
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      url,
+      method,
+      JSON.stringify(propParams),
+      JSON.stringify(propBody),
+      errorToast,
+    ]
+  );
+
+  useEffect(() => {
+    if (!lazy && method.toLowerCase() === "get" && !skip) {
+      fetchData();
+      if (tag) registerRequest(tag, fetchData);
+    }
+
+    return () => {
+      if (tag) unregiseterRequest(tag);
+    };
+  }, [fetchData, method, lazy, skip, tag]);
+
+  return { response, error, loading, request: fetchData };
+}
+
+export default useAxios;

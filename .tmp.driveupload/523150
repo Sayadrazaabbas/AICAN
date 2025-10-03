@@ -1,0 +1,35 @@
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react-swc";
+import os from "os";
+import path from "path";
+import { defineConfig } from "vite";
+
+const platform: string = os?.platform();
+
+let dir: string;
+
+if (platform === "linux") {
+  const dirname = new URL("src", import.meta.url).pathname;
+  dir = path.resolve(dirname);
+} else {
+  dir = path.resolve(__dirname, "src");
+}
+
+// https://vite.dev/config/
+export default defineConfig({
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      "@": dir,
+    },
+  },
+  plugins: [react(), tailwindcss()],
+});

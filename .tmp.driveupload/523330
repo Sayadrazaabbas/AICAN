@@ -1,0 +1,338 @@
+import { AlertCircle, Pencil, Save, X } from "lucide-react";
+import {
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import { Input } from "@/components/ui/input";
+import { DeviceData, deviceDataContext } from "@/contexts/DeviceDataContext";
+import useAxios from "@/hooks/useAxios";
+import {
+  CalibrateFor,
+  Device,
+  DeviceConfig,
+  DeviceConfigRow,
+} from "@/types/device.type";
+import { refetchRequest } from "@/utils/axiosStore";
+import {
+  EC_CONFIG_1,
+  EC_CONFIG_2,
+  EC_CONFIG_3,
+  PH_CONFIG_3,
+  PH_CONFIG_5,
+} from "@/utils/constants";
+
+import Select from "../../Select";
+import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
+import { Button } from "../../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../ui/table";
+import CalibrationTimer from "./CalibrationTimer";
+import EditTableModal from "./EditTableModal";
+
+interface PropTypes {
+  deviceData: Device<DeviceConfig>;
+  setDisableTabs: Dispatch<SetStateAction<boolean>>;
+}
+
+interface EditableCellTypes {
+  value: string;
+  rowIndex: number;
+  deviceConfig: DeviceConfig;
+}
+
+const CONFIGS: Record<string, DeviceConfig> = {
+  EC_CONFIG_3,
+  EC_CONFIG_2,
+  EC_CONFIG_1,
+  PH_CONFIG_5,
+  PH_CONFIG_3,
+};
+
+const WARNING_MESSAGE =
+  "Please do not close or navigate or switch tabs until calibration is complete";
+
+function EditableCell({ value, rowIndex, deviceConfig }: EditableCellTypes) {
+  const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [editValue, setEditValue] = useState<string>(value);
+
+  const { request: updateDeviceConfig } = useAxios<Partial<DeviceConfig>>({
+    method: "PUT",
+    url: `/api/device/config/${deviceConfig?._id}`,
+  });
+
+  const handleSave = async () => {
+    if (value !== editValue) {
+      await updateDeviceConfig({
+        body: {
+          rows: deviceConfig?.rows?.map((r, idx) => {
+            if (idx === rowIndex) {
+              return { ...r, val: +editValue };
+            }
+            return r;
+          }),
+        },
+      });
+    }
+    refetchRequest(["device-id"]);
+    setIsEdit(false);
+  };
+
+  return (
+    <>
+      {isEdit ? (
+        <div className="flex w-full items-center justify-between">
+          <Input
+            className="max-w-1/2"
+            type="number"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            autoFocus
+          />
+
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              className="bg-yellow-500 hover:bg-amber-400"
+              onClick={handleSave}
+            >
+              <Save />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                setIsEdit(false);
+                setEditValue(value);
+              }}
+            >
+              <X />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex w-full items-center justify-between">
+          <p>{value}</p>
+          <Button
+            type="button"
+            size="sm"
+            className="bg-yellow-500 hover:bg-amber-400"
+            onClick={() => setIsEdit(true)}
+          >
+            <Pencil />
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function CalibrationTable({
+  deviceData,
+  setDisableTabs,
+}: PropTypes) {
+  const [deviceConfig, setDeviceConfig] = useState<DeviceConfig>(
+    deviceData?.deviceConfigId ||
+      (deviceData?.type === "ec" ? EC_CONFIG_3 : PH_CONFIG_5)
+  );
+  const [calibrateFor, setCalibrateFor] = useState<CalibrateFor>({
+    index: 0,
+    started: false,
+  });
+
+  const { publishToServer, deviceValues } =
+    useContext<DeviceData>(deviceDataContext);
+
+  const { request: updateDeviceConfig } = useAxios<Partial<DeviceConfig>>({
+    method: "PUT",
+    url: `/api/device/config/${deviceConfig?._id}`,
+  });
+
+  const deviceId = deviceData?.id || "";
+
+  const shouldDisable = calibrateFor?.index !== 0 || calibrateFor?.started;
+
+  useEffect(() => {
+    if (deviceData?.deviceConfigId) {
+      setDeviceConfig(deviceData?.deviceConfigId);
+    }
+  }, [deviceData.deviceConfigId]);
+
+  const isEc = deviceData?.type === "ec";
+  const btnDisable = !deviceConfig?.mode;
+
+  const handleCalibrateStart = () => {
+    if (calibrateFor?.index === 0) window.alert(WARNING_MESSAGE);
+    publishToServer(
+      `/${deviceId}/B_${calibrateFor?.index + 1}`,
+      deviceConfig.rows[calibrateFor?.index]?.val?.toString()
+    );
+    publishToServer(`/${deviceId}/CAL`, `${calibrateFor?.index + 1}0`);
+    setDisableTabs(true);
+    setCalibrateFor((prev) => ({ ...prev, started: true }));
+  };
+
+  const onCalibrationComplete = async () => {
+    let newRows: DeviceConfigRow[] = [];
+
+    const getDeviceValue = (str: string) => {
+      return +(
+        deviceValues?.[`/${deviceId}/${str}_${calibrateFor?.index + 1}`] || 0
+      );
+    };
+    setDeviceConfig((prev) => {
+      newRows = prev?.rows?.map((row, rIdx) => {
+        if (rIdx === calibrateFor?.index) {
+          return {
+            ...row,
+            valAfterCal: getDeviceValue("POST_VAL"),
+            slope: getDeviceValue("SLOPE"),
+            temp: getDeviceValue("TEMP_VAL"),
+            mv: getDeviceValue("MV"),
+            time: new Date(),
+          };
+        }
+        return row;
+      });
+
+      return {
+        ...prev,
+        rows: newRows,
+      };
+    });
+    publishToServer(`/${deviceId}/CAL`, `${calibrateFor?.index + 1}1`);
+    if (calibrateFor?.index === +deviceConfig?.mode - 1) {
+      setDisableTabs(false);
+      await updateDeviceConfig({
+        body: { rows: newRows },
+      });
+      refetchRequest(["device-id"]);
+    }
+  };
+
+  return (
+    <div className="@container/cal-table">
+      <div className="mt-3 flex w-full flex-col justify-between gap-2 @lg/cal-table:flex-row">
+        <div className="flex w-1/2 gap-3">
+          <Select
+            placeholder="Mode"
+            className="max-w-40"
+            value={deviceConfig?.mode}
+            onChange={(e) => {
+              publishToServer(`/${deviceId}/CAL_MODE`, e);
+              setDeviceConfig((prev) => ({
+                ...prev,
+                mode: e,
+                rows: CONFIGS[`${isEc ? "EC" : "PH"}_CONFIG_${e}`]?.rows,
+              }));
+            }}
+            options={(isEc ? [1, 2, 3] : [3, 5]).map((item) => ({
+              label: `Mode ${item}`,
+              value: `${item}`,
+            }))}
+          />
+          {isEc && (
+            <Select
+              placeholder="Probe"
+              value={deviceConfig?.probe || ""}
+              onChange={(e) =>
+                setDeviceConfig((prev) => ({ ...prev, probe: e }))
+              }
+              options={[
+                { label: "0.1k", value: "0.1k" },
+                { label: "1k", value: "1k" },
+                { label: "10k", value: "10k" },
+              ]}
+              disabled={shouldDisable}
+            />
+          )}
+        </div>
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            onClick={handleCalibrateStart}
+            disabled={calibrateFor?.started || btnDisable}
+          >
+            Start
+          </Button>
+          <Button type="button" disabled={shouldDisable || btnDisable}>
+            Print
+          </Button>
+          <EditTableModal
+            key={deviceConfig?.rows?.map((a) => a.val)?.join("")}
+            disabled={shouldDisable || btnDisable}
+            deviceConfig={deviceConfig}
+            deviceId={deviceId}
+          />
+        </div>
+      </div>
+
+      {shouldDisable && (
+        <Alert variant="destructive" className="mt-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Warning</AlertTitle>
+          <AlertDescription>{WARNING_MESSAGE}</AlertDescription>
+        </Alert>
+      )}
+
+      {deviceConfig?.mode && calibrateFor?.started && (
+        <CalibrationTimer
+          maxIndex={+deviceConfig?.mode - 1 || 0}
+          setCalibrateFor={setCalibrateFor}
+          onComplete={onCalibrationComplete}
+        />
+      )}
+
+      <Table className="mt-3">
+        <TableHeader>
+          <TableRow>
+            <TableHead>{isEc ? "EC" : "Ph"}</TableHead>
+            <TableHead>{isEc ? "EC" : "Ph"} After Cal</TableHead>
+            <TableHead>Slope</TableHead>
+            <TableHead>Temp</TableHead>
+            <TableHead>mV</TableHead>
+            <TableHead>Date & Time</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {deviceConfig?.rows?.map((row, rIdx) => (
+            <TableRow
+              key={row?._id || row?.val}
+              className={calibrateFor.index === rIdx ? "bg-blue-100/40" : ""}
+            >
+              <TableCell className="max-w-20">
+                <EditableCell
+                  value={row?.val.toString()}
+                  rowIndex={rIdx}
+                  deviceConfig={deviceConfig}
+                />
+              </TableCell>
+              <TableCell>{row?.valAfterCal || "-"}</TableCell>
+              <TableCell>{row?.slope || "-"}</TableCell>
+              <TableCell>{row?.temp || "-"}</TableCell>
+              <TableCell>{row?.mv || "-"}</TableCell>
+              <TableCell>
+                {row?.time
+                  ? new Date(row?.time)?.toLocaleString("en-ZA", {
+                      hour12: true,
+                    })
+                  : "-"}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

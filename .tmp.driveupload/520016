@@ -1,0 +1,8 @@
+esp32async/AsyncTCP@^3.4.7
+https://github.com/madleech/Button.git
+WebSockets
+https://github.com/plerup/espsoftwareserial.git
+https://github.com/terryjmyers/ADS1115-Lite.git
+ArduinoJson
+esp32async/ESPAsyncWebServer@^3.8.0
+https://github.com/Rotario/arduinoCurveFitting.git

@@ -1,0 +1,111 @@
+import { ChangeEvent, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+
+interface PropTypes {
+  disabled: boolean;
+}
+
+const DEFAULT_DETAILS = {
+  product: "",
+  batchNo: "",
+  arNo: "",
+};
+
+export default function ProductDetails({ disabled }: PropTypes) {
+  const [productsDetails, setProductsDetails] = useState(DEFAULT_DETAILS);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+
+    setProductsDetails((prev) => ({
+      ...prev,
+      [name]: type === "number" ? +value : value,
+    }));
+  };
+
+  return (
+    <div className="mt-2 flex items-center gap-5">
+      <Input
+        disabled={disabled}
+        name="product"
+        placeholder="Product Name"
+        value={productsDetails.product}
+        onChange={handleInputChange}
+      />
+      <Input
+        disabled={disabled}
+        type="number"
+        name="batchNo"
+        placeholder="Batch No"
+        value={productsDetails.batchNo}
+        onChange={handleInputChange}
+      />
+      <Input
+        disabled={disabled}
+        type="number"
+        name="arNo"
+        placeholder="AR No"
+        value={productsDetails.arNo}
+        onChange={handleInputChange}
+      />
+      <Button
+        disabled={disabled}
+        size="sm"
+        type="button"
+        onClick={() => {
+          sessionStorage.setItem(
+            "productDetails",
+            JSON.stringify(productsDetails)
+          );
+          toast.success("Details saved");
+        }}
+      >
+        Submit
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="outline">
+            Export
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem asChild>
+            <Button size="sm" variant="ghost" className="w-full justify-start">
+              All
+            </Button>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Button size="sm" variant="ghost" className="w-full justify-start">
+              Pdf
+            </Button>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        disabled={disabled}
+        size="sm"
+        variant="destructive"
+        type="button"
+        onClick={() => {
+          toast.success("Details cleared");
+          setProductsDetails(DEFAULT_DETAILS);
+          sessionStorage.setItem(
+            "productDetails",
+            JSON.stringify(DEFAULT_DETAILS)
+          );
+        }}
+      >
+        Clear Details
+      </Button>
+    </div>
+  );
+}

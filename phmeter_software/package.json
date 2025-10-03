@@ -1,0 +1,18 @@
+{
+  "name": "iot-lab",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "server": "cd .\\iot-lab-backend\\ && npm run dev",
+    "client": "cd .\\iot-lab-frontend\\ && npm run dev",
+    "start" : "concurrently \"npm run server\" \"npm run client\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

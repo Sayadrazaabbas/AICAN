@@ -1,0 +1,7 @@
+NODE_ENV=development
+PORT=5000
+MONGO_URL=mongodb://localhost:27017/iotlab
+JWT_ACCESS_SECRET=B8%#BFe16,5!%"c8"W!d
+JWT_REFRESH_SECRET=SGrP^61<G=VS:C1!F0q}
+MQTT_URL="mqtt://127.0.0.1:1883"
+# MQTT_URL="ws://broker.mqttdashboard.com:8000/mqtt"

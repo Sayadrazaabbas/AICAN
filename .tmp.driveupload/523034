@@ -1,0 +1,72 @@
+import { Server, Socket } from "socket.io";
+
+import { config, mqttClient } from "../config";
+import getServerIP from "../utils/getServerIP";
+
+interface SocketPayload {
+  topic: string;
+  payload: string;
+}
+
+const TOPICS: string[] = [
+  "/+/RESET",
+  "/+/PH_VAL",
+  "/+/TEMP_VAL",
+  "/+/MV_VAL",
+  "/+/BATTERY",
+  "/+/SLOPE",
+  "/+/OFFSET",
+  "/+/MV_1",
+  "/+/MV_2",
+  "/+/MV_3",
+  "/+/MV_4",
+  "/+/MV_5",
+  "/+/POST_VAL_1",
+  "/+/POST_VAL_2",
+  "/+/POST_VAL_3",
+  "/+/POST_VAL_4",
+  "/+/POST_VAL_5",
+  "/+/VAL_1",
+  "/+/VAL_2",
+  "/+/VAL_3",
+  "/+/VAL_4",
+  "/+/VAL_5",
+  "/+/TEMP_VAL_1",
+  "/+/TEMP_VAL_2",
+  "/+/TEMP_VAL_3",
+  "/+/TEMP_VAL_4",
+  "/+/TEMP_VAL_5",
+  "/+/SLOPE_1",
+  "/+/SLOPE_2",
+  "/+/SLOPE_3",
+  "/+/SLOPE_4",
+  "/+/SLOPE_5",
+];
+
+export const getSocketConfig = () => {
+  return { ip: getServerIP(), port: config.port };
+};
+
+export const handleMqttToSocketConnection = (io: Server) => {
+  mqttClient.subscribe(TOPICS);
+  mqttClient.on("message", (topic, message) => {
+    const payload = message.toString();
+
+    if (payload && topic) {
+      // TODO: add data saving logic here
+      io.emit("device-server-client", {
+        topic,
+        payload,
+      });
+    }
+  });
+};
+
+export const handleSocketToMqttConnection = (socket: Socket) => {
+  socket.on("client-server-device", (data: SocketPayload) => {
+    const { topic, payload } = data;
+    if (topic && payload) {
+      mqttClient.publish(topic, payload);
+    }
+  });
+};

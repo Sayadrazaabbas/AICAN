@@ -1,0 +1,9 @@
+import { HydratedDocument } from "mongoose";
+
+export interface MediaType {
+  name: string;
+  data: string;
+  type: string;
+}
+
+export interface IMediaDocument extends HydratedDocument<MediaType> {}

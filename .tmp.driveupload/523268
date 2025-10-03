@@ -1,0 +1,66 @@
+import { cn } from "@/lib/utils";
+
+import AliasHeaderAndFooter from "./aliasType";
+
+interface PropTypes {
+  isFor: "header" | "footer";
+  data: AliasHeaderAndFooter;
+  className?: string;
+}
+
+export default function ComponentPreview({
+  isFor,
+  data,
+  className,
+}: PropTypes) {
+  const config = data?.[isFor];
+
+  const {
+    textName,
+    textPosition,
+    textSize,
+    textFont,
+    image,
+    width,
+    height,
+    imagePosition,
+  } = config;
+
+  return (
+    <div className={cn("w-full overflow-hidden", className)}>
+      <p className="capitalize">{isFor} Preview</p>
+
+      <div
+        className={`flex gap-3 ${imagePosition === "start" ? "flex-row" : "flex-row-reverse"}`}
+      >
+        {image?.data && (
+          <img
+            src={image?.data}
+            alt={isFor}
+            className="aspect-square object-contain"
+            style={{
+              height: `${height || 50}px`,
+              width: `${width || 50}px`,
+            }}
+          />
+        )}
+        {textName && (
+          <div
+            className={`flex w-full flex-col items-${textPosition} text-${textSize} font-${textFont}`}
+          >
+            {textName?.split("\n")?.map((text) => <p key={text}>{text}</p>)}
+          </div>
+        )}
+      </div>
+
+      {isFor === "header" && (
+        <div className="flex flex-col">
+          {data.header.companyName && <span>Company Name :</span>}
+          {data.header.calibrate && <span>Calibrate :</span>}
+          {data.header.reportGenerated && <span>Report Generated :</span>}
+          {data.header.deviceId && <span>Device ID :</span>}
+        </div>
+      )}
+    </div>
+  );
+}

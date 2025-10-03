@@ -1,0 +1,40 @@
+import { HydratedDocument, Types } from "mongoose";
+
+export interface DeviceType<T = string | Types.ObjectId> {
+  id: string;
+  type: string;
+  configuration: Record<string, unknown>;
+  calibrate: boolean;
+  log: boolean;
+  status: string;
+  lastUpdated: Date;
+  deviceConfigId: T;
+}
+
+export interface DeviceConfigRow {
+  _id: string | Types.ObjectId;
+  val: number;
+  valAfterCal?: number;
+  slope?: number;
+  temp?: number;
+  mv?: number;
+  minMv?: number;
+  maxMv?: number;
+  time?: Date;
+}
+
+export interface DeviceConfigType<T = string | Types.ObjectId> {
+  mode: string;
+  rows: DeviceConfigRow[];
+  probe?: string;
+  deviceId: T;
+  alarm?: {
+    minPh: number;
+    maxPh: number;
+  };
+}
+
+export interface IDeviceDocument extends HydratedDocument<DeviceType> {}
+
+export interface IDeviceConfigDocument
+  extends HydratedDocument<DeviceConfigType> {}

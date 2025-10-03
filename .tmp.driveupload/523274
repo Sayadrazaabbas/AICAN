@@ -1,0 +1,192 @@
+import { Loader2, Save } from "lucide-react";
+import {
+  ChangeEvent,
+  MouseEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
+
+import useAxios from "@/hooks/useAxios";
+import { refetchRequest } from "@/utils/axiosStore";
+
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
+import ComponentCreator from "./ComponentCreator";
+import ComponentPreview from "./ComponentPreview";
+import AliasHeaderAndFooter from "./aliasType";
+
+export const DEFAULT_FORMDATA: AliasHeaderAndFooter = {
+  name: "",
+  header: {
+    textName: "",
+    textPosition: "start",
+    textSize: "sm",
+    textFont: "thin",
+    image: null,
+    width: 50,
+    height: 50,
+    imagePosition: "start",
+    companyName: false,
+    calibrate: false,
+    reportGenerated: false,
+    deviceId: false,
+  },
+  footer: {
+    textName: "",
+    textPosition: "start",
+    textSize: "sm",
+    textFont: "thin",
+    image: null,
+    width: 50,
+    height: 50,
+    imagePosition: "start",
+  },
+  selected: false,
+};
+
+export default function CreateHeaderFooterModal() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] =
+    useState<AliasHeaderAndFooter>(DEFAULT_FORMDATA);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const { request: createDocument, loading: createDocumentLoading } =
+    useAxios<AliasHeaderAndFooter>({
+      method: "POST",
+      url: "/api/headerandfooter",
+    });
+
+  const { request: editDocument, loading: editDocumentLoading } =
+    useAxios<AliasHeaderAndFooter>({
+      method: "PUT",
+      url: `/api/headerandfooter/${id}`,
+    });
+
+  const { response: headerFooterData, loading: fetchDocumentLoading } =
+    useAxios<AliasHeaderAndFooter>({
+      method: "GET",
+      url: `/api/headerandfooter/${id}`,
+      skip: !id,
+    });
+
+  useEffect(() => {
+    if (headerFooterData?.data?.name) {
+      setFormData(headerFooterData?.data);
+    }
+  }, [headerFooterData?.data]);
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { value, name } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit: MouseEventHandler<HTMLButtonElement> = async (e) => {
+    e.preventDefault();
+
+    const { data } = await (id ? editDocument : createDocument)({
+      body: formData,
+    });
+    if (triggerRef?.current && data) {
+      refetchRequest(["header-footer"]);
+      setFormData(DEFAULT_FORMDATA);
+      if (id) {
+        navigate("/settings/setup");
+        toast.success("Header and Footer Updated");
+      } else {
+        triggerRef.current.click();
+        toast.success("Header and Footer created");
+      }
+    }
+  };
+
+  const loading = createDocumentLoading || editDocumentLoading;
+
+  return (
+    <Dialog
+      key={id}
+      defaultOpen={!!id}
+      onOpenChange={(e) => {
+        if (!e && id) {
+          navigate("/settings/setup");
+          setFormData(DEFAULT_FORMDATA);
+        }
+      }}
+    >
+      <DialogTrigger ref={triggerRef} asChild>
+        <Button type="button">Create</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[95%] min-w-[95%] overflow-y-scroll lg:min-w-4/5">
+        <DialogHeader>
+          <DialogTitle>
+            {id ? "Edit" : "Create new"} Header and Footer
+          </DialogTitle>
+          <DialogDescription>
+            You can {id ? "edit" : "create new"} header and footer here.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div
+          className={
+            fetchDocumentLoading ? "pointer-events-none animate-pulse" : ""
+          }
+        >
+          <Label className="mb-1" htmlFor="name">
+            Name
+          </Label>
+          <Input
+            id="name"
+            value={formData?.name}
+            onChange={handleInputChange}
+            name="name"
+            required
+          />
+
+          <Separator className="my-3" />
+
+          <ComponentCreator
+            isFor="header"
+            data={formData}
+            setData={setFormData}
+          />
+
+          <ComponentPreview isFor="header" data={formData} className="mt-2" />
+
+          <Separator className="my-3" />
+
+          <ComponentCreator
+            isFor="footer"
+            data={formData}
+            setData={setFormData}
+          />
+          <ComponentPreview isFor="footer" data={formData} className="mt-2" />
+        </div>
+
+        <DialogFooter>
+          <Button type="button" disabled={loading} onClick={handleSubmit}>
+            {loading ? <Loader2 className="animate-spin" /> : <Save />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

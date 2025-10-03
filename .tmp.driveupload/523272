@@ -1,0 +1,193 @@
+import { ChangeEvent, Dispatch, SetStateAction } from "react";
+
+import Select from "../Select";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import AliasHeaderAndFooter from "./aliasType";
+
+interface PropTypes {
+  isFor: "header" | "footer";
+  data: AliasHeaderAndFooter;
+  setData: Dispatch<SetStateAction<AliasHeaderAndFooter>>;
+}
+
+export default function ComponentCreator({ isFor, data, setData }: PropTypes) {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { value, name, type } = e.target;
+    setData((prev) => ({
+      ...prev,
+      [isFor]: {
+        ...(prev[isFor] || {}),
+        [name]: type === "number" ? +value : value,
+      },
+    }));
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    setData((prev) => ({
+      ...prev,
+      [isFor]: {
+        ...prev[isFor],
+        [field]: value,
+      },
+    }));
+  };
+
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        const file = e.target?.files?.[0];
+        if (file && reader?.result)
+          setData((prev) => ({
+            ...prev,
+            [isFor]: {
+              ...prev[isFor],
+              image: {
+                name: file.name,
+                data: reader.result?.toString(),
+                type: file.type,
+              },
+            },
+          }));
+      });
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  return (
+    <>
+      <p className="text-lg font-semibold capitalize">{isFor}</p>
+
+      <Label className="mt-2 mb-1" htmlFor="textName">
+        Text
+      </Label>
+      <Textarea
+        id="textName"
+        value={data?.[isFor]?.textName || ""}
+        onChange={handleInputChange}
+        name="textName"
+        required
+      />
+
+      <div className="my-3 flex gap-4">
+        <div className="flex w-full flex-col">
+          <Label htmlFor="textPosition" className="mb-1">
+            Text Position
+          </Label>
+          <Select
+            id="textPosition"
+            value={data?.[isFor]?.textPosition}
+            options={[
+              { label: "Left", value: "start" },
+              { label: "Mid", value: "center" },
+              { label: "Right", value: "end" },
+            ]}
+            onChange={(val) => handleSelectChange("textPosition", val)}
+            required
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <Label htmlFor="textSize" className="mb-1">
+            Text Size
+          </Label>
+          <Select
+            id="textSize"
+            value={data?.[isFor]?.textSize}
+            options={[
+              { label: "Small", value: "sm" },
+              { label: "Medium", value: "md" },
+              { label: "Large", value: "lg" },
+              { label: "XL", value: "xl" },
+              { label: "2XL", value: "2xl" },
+            ]}
+            onChange={(val) => handleSelectChange("textSize", val)}
+            required
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <Label htmlFor="textFont" className="mb-1">
+            Text Font
+          </Label>
+          <Select
+            id="textFont"
+            value={data?.[isFor]?.textFont}
+            options={[
+              { label: "Thin", value: "thin" },
+              { label: "Normal", value: "normal" },
+              { label: "Medium", value: "medium" },
+              { label: "Bold", value: "bold" },
+              { label: "Extra Bold", value: "extrabold" },
+            ]}
+            onChange={(val) => handleSelectChange("textFont", val)}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <div className="flex w-full flex-col">
+          <Label htmlFor="image" className="mb-1">
+            Image
+          </Label>
+          <Input
+            id="image"
+            name="image"
+            onChange={onSelectFile}
+            type="file"
+            required
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <Label htmlFor="width" className="mb-1">
+            Width
+          </Label>
+          <Input
+            id="width"
+            name="width"
+            value={data?.[isFor]?.width || ""}
+            onChange={handleInputChange}
+            type="number"
+            required
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <Label htmlFor="height" className="mb-1">
+            Height
+          </Label>
+          <Input
+            id="height"
+            name="height"
+            value={data?.[isFor]?.height || ""}
+            onChange={handleInputChange}
+            type="number"
+            required
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <Label htmlFor="imagePosition" className="mb-1">
+            Image Position
+          </Label>
+          <Select
+            id="imagePosition"
+            value={data?.[isFor]?.imagePosition}
+            options={[
+              { label: "Left", value: "start" },
+              { label: "Right", value: "end" },
+            ]}
+            onChange={(val) => handleSelectChange("imagePosition", val)}
+            required
+          />
+        </div>
+      </div>
+    </>
+  );
+}

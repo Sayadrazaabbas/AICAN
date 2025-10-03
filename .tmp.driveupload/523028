@@ -1,0 +1,106 @@
+import { PaginateOptions, Types } from "mongoose";
+
+import { HeaderAndFooter, Media } from "../models";
+import { HeaderAndFooterType } from "../types/headerAndFooter.type";
+import { IMediaDocument, MediaType } from "../types/media.type";
+import AppError from "../utils/AppError";
+
+export const createHeaderAndFooter = async (
+  body: HeaderAndFooterType<MediaType | Types.ObjectId | null>
+) => {
+  if (body.header.image as MediaType) {
+    const media = await Media.create(body?.header.image);
+    body.header.image = media._id;
+  } else {
+    body.footer.image = null;
+  }
+
+  if (body.footer.image as MediaType) {
+    const media = await Media.create(body?.footer.image);
+    body.footer.image = media._id;
+  } else {
+    body.footer.image = null;
+  }
+
+  const doc = await HeaderAndFooter.create(body);
+  return doc;
+};
+
+export const getHeaderAndFooters = async () => {
+  const docs = await HeaderAndFooter.find();
+  return docs;
+};
+
+export const queryHeaderAndFooters = async (
+  filter: Record<string, unknown>,
+  options: PaginateOptions
+) => {
+  const docs = await HeaderAndFooter.paginate(filter, options);
+  return docs;
+};
+
+export const getHeaderAndFooterById = async (id: string) => {
+  const doc = await HeaderAndFooter.findById(id).populate(
+    "header.image footer.image"
+  );
+  if (!doc) {
+    throw new AppError(404, "Document not found or deleted");
+  }
+  return doc;
+};
+
+export const updateHeaderAndFooter = async (
+  id: string,
+  body: HeaderAndFooterType<IMediaDocument | Types.ObjectId>
+) => {
+  const doc = await HeaderAndFooter.findById(id);
+  if (!doc) {
+    throw new AppError(404, "Document not found or deleted");
+  }
+
+  if (body?.header?.image && !body?.header?.image?._id) {
+    const media = await Media.create(body?.header.image);
+    body.header.image = media._id;
+    if (doc?.header.image) {
+      await Media.findByIdAndDelete(doc.header.image);
+    }
+  }
+
+  if (body?.footer?.image && !body?.footer?.image?._id) {
+    const media = await Media.create(body?.footer.image);
+    body.footer.image = media._id;
+    if (doc?.footer.image) {
+      await Media.findByIdAndDelete(doc.footer.image);
+    }
+  }
+
+  Object.assign(doc, body);
+  const updated = await doc.save();
+  if (!updated) {
+    throw new AppError(400, "Failed to update document");
+  }
+
+  return doc;
+};
+
+export const selectHeaderAndFooter = async (id: string) => {
+  const doc = await HeaderAndFooter.findByIdAndUpdate(id, { selected: true });
+  if (!doc) {
+    throw new AppError(404, "Document not found or deleted");
+  }
+  await HeaderAndFooter.updateMany({ _id: { $ne: id } }, { selected: false });
+
+  return doc;
+};
+
+export const deleteHeaderAndFooter = async (id: string) => {
+  const doc = await HeaderAndFooter.findByIdAndDelete(id);
+  if (!doc) {
+    throw new AppError(404, "Document not found or deleted");
+  }
+
+  if (doc.header.image) await Media.findByIdAndDelete(doc.header.image);
+  if (doc.footer.image) await Media.findByIdAndDelete(doc.footer.image);
+
+  return doc;
+};

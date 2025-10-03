@@ -1,0 +1,47 @@
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+
+import models from "../constanst/model.constant";
+import { IUserDocument } from "../types/user.type";
+
+const UserSchema = new mongoose.Schema<IUserDocument>(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true, select: false },
+    role: {
+      type: String,
+      required: true,
+      enum: ["superuser", "admin", "user"],
+      default: "user",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+UserSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    const salt = await bcrypt.genSalt();
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  next();
+});
+
+UserSchema.methods.comparePassword = async function (
+  enteredPassword: string
+): Promise<boolean> {
+  const isPassMatch = await bcrypt.compare(enteredPassword, this.password);
+  return isPassMatch;
+};
+
+UserSchema.plugin(mongoosePaginate);
+
+const TlcProject = mongoose.model<
+  IUserDocument,
+  mongoose.PaginateModel<IUserDocument>
+>(models.user, UserSchema);
+
+export default TlcProject;

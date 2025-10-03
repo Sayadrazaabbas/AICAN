@@ -1,0 +1,131 @@
+import { useNavigate, useSearchParams } from "react-router";
+import { toast } from "sonner";
+
+import Header from "@/components/Header";
+import Pagination from "@/components/Pagination";
+import TableDropdown from "@/components/TableDropdown";
+import CreateHeaderAndFooterModal from "@/components/headerAndFooter/CreateHeaderAndFooterModal";
+import AliasHeaderAndFooter from "@/components/headerAndFooter/aliasType";
+import Container from "@/components/pageLayout/Container";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import useAxios from "@/hooks/useAxios";
+import { PagianteResponse } from "@/types/default.type";
+import { HeaderAndFooter } from "@/types/headerAndFooter.type";
+import { PAGINATION_LIMIT } from "@/utils/constants";
+import getPaginationIndex from "@/utils/getPaginationIndex";
+
+export default function ManageUsers() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = +(searchParams?.get("page") || 1);
+  const limit = +(searchParams?.get("limit") || PAGINATION_LIMIT);
+
+  const { response: headerAndFooterResponse, request: refetchData } = useAxios<
+    PagianteResponse<HeaderAndFooter>
+  >({
+    method: "GET",
+    url: `/api/headerandfooter/query`,
+    params: { page, limit },
+    tag: "header-footer",
+  });
+
+  const { docs: users } = headerAndFooterResponse?.data || {};
+
+  const { request: deleteDocument } = useAxios<AliasHeaderAndFooter>({
+    method: "DELETE",
+    url: `/api/headerandfooter`,
+  });
+
+  const { request: selectDocument } = useAxios<AliasHeaderAndFooter>({
+    method: "PUT",
+    url: `/api/headerandfooter/select`,
+  });
+
+  const handleSearchParam = (key: string, val: string | number) => {
+    setSearchParams((prev) => {
+      prev.set(key, val.toString());
+      return prev;
+    });
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      const { data } = await deleteDocument({ id });
+      if (data) {
+        refetchData();
+        toast.success("Header and Footer Deleted");
+      }
+    }
+  };
+
+  const handleSelect = async (id: string, selected: boolean) => {
+    if (selected) {
+      toast.info("Already selected");
+      return;
+    }
+    const { data } = await selectDocument({ id });
+    if (data) {
+      refetchData();
+      toast.success("Header and Footer selected");
+    }
+  };
+
+  return (
+    <Container className="overflow-y-auto">
+      <Header title="Manage Header and Footer">
+        <CreateHeaderAndFooterModal />
+      </Header>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-secondary">
+            <TableHead>#</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Selected</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users?.map((headerAndFooter, hIdx) => (
+            <TableRow key={headerAndFooter?._id}>
+              <TableCell>{getPaginationIndex(page, limit, hIdx)}</TableCell>
+              <TableCell>{headerAndFooter?.name}</TableCell>
+              <TableCell>{headerAndFooter?.selected ? "Yes" : "No"}</TableCell>
+              <TableCell>
+                <TableDropdown
+                  onEdit={() => {
+                    if (headerAndFooter?._id) navigate(headerAndFooter?._id);
+                  }}
+                  onSelect={() => {
+                    if (headerAndFooter?._id)
+                      handleSelect(
+                        headerAndFooter?._id,
+                        headerAndFooter?.selected
+                      );
+                  }}
+                  onDelete={() => {
+                    if (headerAndFooter?._id)
+                      handleDelete(headerAndFooter?._id, headerAndFooter?.name);
+                  }}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {headerAndFooterResponse?.data && (
+        <Pagination
+          data={headerAndFooterResponse?.data}
+          onPageChange={(e) => handleSearchParam("page", e)}
+        />
+      )}
+    </Container>
+  );
+}

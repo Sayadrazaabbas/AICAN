@@ -1,0 +1,88 @@
+import { useContext } from "react";
+import { useLocation, useNavigate } from "react-router";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { DeviceData, deviceDataContext } from "@/contexts/DeviceDataContext";
+import { Device } from "@/types/device.type";
+
+interface PropTypes {
+  device: Device;
+}
+
+export default function DeviceCard({ device }: PropTypes) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const { deviceValues } = useContext<DeviceData>(deviceDataContext);
+
+  const deviceId = device?.id;
+
+  return (
+    <Card
+      className="overflow-hidden p-0"
+      onClick={() => {
+        sessionStorage.setItem("logs", JSON.stringify([]));
+        sessionStorage.setItem("productDetails", JSON.stringify({}));
+        if (device?._id)
+          navigate(
+            pathname?.startsWith("/dashboard")
+              ? device?._id
+              : `/dashboard/${device?._id}`
+          );
+      }}
+    >
+      <CardContent className="p-0">
+        <div className="relative p-6 pt-8">
+          <p className="text-center text-5xl font-medium">
+            {deviceValues?.[`/${deviceId}/PH_VAL`] || "00"}
+          </p>
+          <p className="text-center">{device?.type}</p>
+          <div className="absolute top-4 left-4 h-6 w-6 rounded-full bg-red-500" />
+        </div>
+
+        <div className="flex w-full justify-evenly px-6">
+          <div className="w-1/3">
+            <p className="text-center">Battery</p>
+            <p className="text-center">
+              {deviceValues?.[`/${deviceId}/BATTERY`] || "00"}
+            </p>
+          </div>
+          <div className="bg-muted min-h-full min-w-[2px]" />
+          <div className="w-1/3">
+            <p className="text-center">Slope</p>
+            <p className="text-center">
+              {deviceValues?.[`/${deviceId}/SLOPE`] || "00"}
+            </p>
+          </div>
+          <div className="bg-muted min-h-full min-w-[2px]" />
+          <div className="w-1/3">
+            <p className="text-center">Offset</p>
+            <p className="text-center">
+              {deviceValues?.[`/${deviceId}/OFFSET`] || "00"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 bg-red-400 px-6 py-0.5 text-center text-lg font-medium text-white">
+          {device?.type === "ec" ? "ECMETER: " : "PHMETER: "}
+          {device?.id}
+        </div>
+
+        <div className="flex w-full justify-evenly bg-red-400/25 px-6 py-5">
+          <div className="w-1/3">
+            <p className="text-center">mV</p>
+            <p className="text-center">
+              {deviceValues?.[`/${deviceId}/MV_VAL`] || "00"}
+            </p>
+          </div>
+          <div className="w-1/3">
+            <p className="text-center">Temp</p>
+            <p className="text-center">
+              {deviceValues?.[`/${deviceId}/TEMP_VAL`] || "00"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

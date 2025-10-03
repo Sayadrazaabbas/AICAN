@@ -1,0 +1,88 @@
+import {
+  Context,
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  createContext,
+  useMemo,
+  useState,
+} from "react";
+import { Socket, io } from "socket.io-client";
+
+import useAxios from "@/hooks/useAxios";
+
+type DeviceType = Record<string, string>;
+
+interface SocketPayload {
+  topic: string;
+  payload: string;
+}
+
+export interface DeviceData {
+  deviceValues: DeviceType;
+  setDeviceValues: Dispatch<SetStateAction<DeviceType>>;
+  publishToServer: (topic?: string, payload?: string) => void;
+}
+
+export const deviceDataContext: Context<DeviceData> = createContext({
+  deviceValues: {},
+  setDeviceValues: (() => {}) as Dispatch<SetStateAction<DeviceType>>,
+  publishToServer: () => {},
+});
+
+export default function DeviceDataContext({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [deviceValues, setDeviceValues] = useState<DeviceType>({});
+
+  const { response: socketConfig } = useAxios<{
+    ip: string;
+    port: string;
+  }>({
+    method: "GET",
+    url: "/api/mqttsocket",
+  });
+
+  const { ip, port } = socketConfig?.data || {};
+
+  const socketClient: Socket | undefined = useMemo(() => {
+    if (!ip || !port) return undefined;
+    const client = io(`http://${ip}:${port}`, {
+      transports: ["websocket", "polling"],
+    });
+
+    client.on("connect", () => {
+      console.log("SOCKET CONNECTED"); // eslint-disable-line
+    });
+
+    client.on("device-server-client", (data: SocketPayload) => {
+      const { topic, payload } = data;
+      if (topic && payload) {
+        setDeviceValues((prev) => ({ ...prev, [topic]: payload }));
+      }
+    });
+
+    return client;
+  }, [ip, port]);
+
+  const contextValue = useMemo(
+    () => ({
+      deviceValues,
+      setDeviceValues,
+      publishToServer: (topic?: string, payload?: string) => {
+        if (socketClient && topic && payload) {
+          socketClient?.emit("client-server-device", { topic, payload });
+        }
+      },
+    }),
+    [deviceValues, socketClient]
+  );
+
+  return (
+    <deviceDataContext.Provider value={contextValue}>
+      {children}
+    </deviceDataContext.Provider>
+  );
+}

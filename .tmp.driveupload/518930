@@ -1,0 +1,1 @@
+{"type": "library", "name": "EspSoftwareSerial", "version": "8.2.0+sha.40038df", "spec": {"owner": null, "id": null, "name": "espsoftwareserial", "requirements": null, "uri": "git+https://github.com/plerup/espsoftwareserial.git"}}
